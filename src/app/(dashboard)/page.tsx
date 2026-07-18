@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import DashboardCharts from '@/components/DashboardCharts'
 import type { DashboardResponse } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 async function getDashboardData(): Promise<DashboardResponse> {
   // ── Project distribution by estado (for doughnut chart) ──
   const estadosRaw = await prisma.$queryRaw<
