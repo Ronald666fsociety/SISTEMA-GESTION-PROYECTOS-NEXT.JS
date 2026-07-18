@@ -38,9 +38,9 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
 // Public paths that do not require authentication
 const publicPaths = ['/api/auth/login']
 
-// ── Middleware ──
+// ── Proxy / Middleware ──
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ── Rate limiting (login endpoint) ──
@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
       ?? request.headers.get('x-real-ip')
       ?? '127.0.0.1'
 
-    const { allowed, remaining } = checkRateLimit(ip)
+    const { allowed } = checkRateLimit(ip)
     if (!allowed) {
       console.warn(`[SECURITY] Rate limit exceeded for IP: ${ip} on ${pathname} at ${new Date().toISOString()}`)
       return NextResponse.json(
@@ -101,6 +101,10 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next()
+}
+
+export async function middleware(request: NextRequest) {
+  return proxy(request)
 }
 
 export const config = {
