@@ -229,6 +229,7 @@ export default function DependenciaList({
         pagination={false}
         size="small"
         bordered
+        scroll={{ x: 'max-content' }}
         locale={{ emptyText: 'No hay dependencias registradas' }}
       />
     </div>

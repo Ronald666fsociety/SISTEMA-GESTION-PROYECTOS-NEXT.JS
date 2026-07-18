@@ -201,7 +201,7 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
   return (
     <>
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card
             style={{
               borderLeft: '4px solid #1677ff',
@@ -217,7 +217,7 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
             />
           </Card>
         </Col>
-        <Col xs={12} sm={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card
             style={{
               borderLeft: '4px solid #1677ff',
@@ -233,7 +233,7 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
             />
           </Card>
         </Col>
-        <Col xs={12} sm={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card
             style={{
               borderLeft: '4px solid #52c41a',
@@ -249,7 +249,7 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
             />
           </Card>
         </Col>
-        <Col xs={12} sm={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card
             style={{
               borderLeft: '4px solid #8c8c8c',
@@ -301,6 +301,7 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
             pagination={false}
             size="small"
             bordered
+            scroll={{ x: 'max-content' }}
           />
         </Card>
       )}

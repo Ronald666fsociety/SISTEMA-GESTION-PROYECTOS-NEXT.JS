@@ -234,6 +234,7 @@ export default function AuditoriaTable() {
           onChange={handleTableChange as any}
           size="middle"
           bordered
+          scroll={{ x: 'max-content' }}
           locale={{
             emptyText: 'No se encontraron registros de auditoría',
           }}

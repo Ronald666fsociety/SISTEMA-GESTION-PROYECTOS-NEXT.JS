@@ -200,17 +200,20 @@ export default function ProyectosPage() {
   return (
     <div>
       <div
+        className="responsive-page-header"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
           marginBottom: 24,
         }}
       >
         <Title level={3} style={{ margin: 0 }}>
           Proyectos
         </Title>
-        <Space>
+        <Space wrap>
           <Button icon={<FilePdfOutlined />} onClick={handleExportPDF}>
             Reporte PDF
           </Button>

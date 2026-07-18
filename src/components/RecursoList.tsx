@@ -231,6 +231,7 @@ export default function RecursoList({
         pagination={false}
         size="small"
         bordered
+        scroll={{ x: 'max-content' }}
         locale={{ emptyText: 'No hay asignaciones registradas' }}
       />
     </div>

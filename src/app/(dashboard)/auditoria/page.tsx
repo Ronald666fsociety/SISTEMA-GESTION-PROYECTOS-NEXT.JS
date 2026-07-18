@@ -37,10 +37,13 @@ export default function AuditoriaPage() {
   return (
     <div>
       <div
+        className="responsive-page-header"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16,
           marginBottom: 24,
         }}
       >

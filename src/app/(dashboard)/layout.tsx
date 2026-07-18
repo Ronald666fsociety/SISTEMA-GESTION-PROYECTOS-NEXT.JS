@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Layout, Menu, Button, Typography, Dropdown, Avatar, Spin } from 'antd'
+import { Layout, Menu, Button, Typography, Dropdown, Avatar, Spin, Drawer, Grid } from 'antd'
 import {
   DashboardOutlined,
   ProjectOutlined,
@@ -12,6 +12,7 @@ import {
   UserOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  MenuOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { usePathname, useRouter } from 'next/navigation'
@@ -19,12 +20,17 @@ import { AuthProvider, useAuth } from '@/context/AuthContext'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
+const { useBreakpoint } = Grid
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
   const { user, logout, loading } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
+  const screens = useBreakpoint()
+
+  const isMobile = screens.md === false
 
   if (loading) {
     return (
@@ -65,6 +71,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   ]
 
   const handleMenuClick = ({ key }: { key: string }) => {
+    if (isMobile) {
+      setMobileDrawerOpen(false)
+    }
     router.push(key)
   }
 
@@ -85,87 +94,112 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     },
   ]
 
-  return (
-    <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
-      {/* Sleek Slate Sidebar */}
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        breakpoint="lg"
+  const sidebarBrandHeader = (
+    <div
+      style={{
+        height: 64,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+        padding: collapsed && !isMobile ? '0' : '0 20px',
+        gap: 12,
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(0, 0, 0, 0.15)',
+      }}
+    >
+      <div
         style={{
-          overflow: 'auto',
-          height: '100vh',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
-          borderRight: '1px solid #1e293b',
-          zIndex: 100,
-          boxShadow: '4px 0 20px rgba(0, 0, 0, 0.05)',
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
         }}
       >
-        {/* Brand Logo Header */}
-        <div
+        <ProjectOutlined style={{ color: '#ffffff', fontSize: 18 }} />
+      </div>
+      {(!collapsed || isMobile) && (
+        <div>
+          <Text strong style={{ color: '#ffffff', fontSize: 16, letterSpacing: 1, fontWeight: 800, display: 'block', lineHeight: 1.2 }}>
+            SIGEPRO
+          </Text>
+          <Text style={{ color: '#94a3b8', fontSize: 10, display: 'block' }}>
+            Enterprise Platform
+          </Text>
+        </div>
+      )}
+    </div>
+  )
+
+  const sidebarMenuContent = (
+    <Menu
+      theme="dark"
+      mode="inline"
+      selectedKeys={[pathname]}
+      items={menuItems}
+      onClick={handleMenuClick}
+      style={{
+        background: 'transparent',
+        borderRight: 'none',
+        paddingTop: 16,
+      }}
+    />
+  )
+
+  return (
+    <Layout style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      {/* Desktop Sider */}
+      {!isMobile && (
+        <Sider
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          breakpoint="lg"
           style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? '0' : '0 20px',
-            gap: 12,
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            background: 'rgba(0, 0, 0, 0.15)',
+            overflow: 'auto',
+            height: '100vh',
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
+            borderRight: '1px solid #1e293b',
+            zIndex: 100,
+            boxShadow: '4px 0 20px rgba(0, 0, 0, 0.05)',
           }}
         >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
-            }}
-          >
-            <ProjectOutlined style={{ color: '#ffffff', fontSize: 18 }} />
-          </div>
-          {!collapsed && (
-            <div>
-              <Text strong style={{ color: '#ffffff', fontSize: 16, letterSpacing: 1, fontWeight: 800, display: 'block', lineHeight: 1.2 }}>
-                SIGEPRO
-              </Text>
-              <Text style={{ color: '#94a3b8', fontSize: 10, display: 'block' }}>
-                Enterprise Platform
-              </Text>
-            </div>
-          )}
-        </div>
+          {sidebarBrandHeader}
+          {sidebarMenuContent}
+        </Sider>
+      )}
 
-        {/* Navigation Menu */}
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[pathname]}
-          items={menuItems}
-          onClick={handleMenuClick}
-          style={{
-            background: 'transparent',
-            borderRight: 'none',
-            paddingTop: 16,
+      {/* Mobile Drawer Navigation */}
+      {isMobile && (
+        <Drawer
+          placement="left"
+          closable={false}
+          onClose={() => setMobileDrawerOpen(false)}
+          open={mobileDrawerOpen}
+          width={260}
+          bodyStyle={{
+            padding: 0,
+            background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
           }}
-        />
-      </Sider>
+        >
+          {sidebarBrandHeader}
+          {sidebarMenuContent}
+        </Drawer>
+      )}
 
       {/* Main Content Area */}
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.25s ease', background: '#f8fafc' }}>
+      <Layout style={{ marginLeft: isMobile ? 0 : (collapsed ? 80 : 200), transition: 'margin-left 0.25s ease', background: '#f8fafc' }}>
         {/* Top Header */}
         <Header
           style={{
-            padding: '0 28px',
+            padding: isMobile ? '0 12px' : '0 28px',
             background: '#ffffff',
             display: 'flex',
             alignItems: 'center',
@@ -178,29 +212,42 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             borderBottom: '1px solid #e2e8f0',
           }}
         >
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined style={{ color: '#334155' }} /> : <MenuFoldOutlined style={{ color: '#334155' }} />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{ fontSize: 18 }}
-          />
+          {isMobile ? (
+            <Button
+              type="text"
+              icon={<MenuOutlined style={{ color: '#334155', fontSize: 20 }} />}
+              onClick={() => setMobileDrawerOpen(true)}
+              style={{ fontSize: 18 }}
+            />
+          ) : (
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined style={{ color: '#334155' }} /> : <MenuFoldOutlined style={{ color: '#334155' }} />}
+              onClick={() => setCollapsed(!collapsed)}
+              style={{ fontSize: 18 }}
+            />
+          )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: '#eff6ff', border: '1px solid #dbeafe' }}>
-              <SafetyCertificateOutlined style={{ color: '#2563eb', fontSize: 13 }} />
-              <Text style={{ color: '#1e40af', fontSize: 11, fontWeight: 600 }}>Plataforma Segura Enterprise</Text>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16 }}>
+            {!isMobile && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: '#eff6ff', border: '1px solid #dbeafe' }}>
+                <SafetyCertificateOutlined style={{ color: '#2563eb', fontSize: 13 }} />
+                <Text style={{ color: '#1e40af', fontSize: 11, fontWeight: 600 }}>Plataforma Segura Enterprise</Text>
+              </div>
+            )}
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-              <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, padding: '4px 10px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                 <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#2563eb' }} />
-                <Text strong style={{ color: '#0f172a', fontSize: 13 }}>{user?.nombre}</Text>
+                <Text strong style={{ color: '#0f172a', fontSize: 13, maxWidth: isMobile ? 100 : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.nombre}
+                </Text>
               </div>
             </Dropdown>
           </div>
         </Header>
 
-        <Content style={{ margin: '24px 28px', minHeight: 'calc(100vh - 112px)' }}>
+        <Content style={{ margin: isMobile ? '16px 12px' : '24px 28px', minHeight: 'calc(100vh - 112px)' }}>
           {children}
         </Content>
       </Layout>

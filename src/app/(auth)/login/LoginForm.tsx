@@ -708,6 +708,21 @@ export default function LoginForm() {
             padding: 32px 24px;
           }
         }
+
+        @media (max-width: 576px) {
+          .login-page-container {
+            padding: 12px 8px;
+          }
+          .login-form-col {
+            padding: 24px 16px;
+          }
+          .main-heading {
+            font-size: 22px !important;
+          }
+          .brand-name {
+            font-size: 16px !important;
+          }
+        }
       `}</style>
     </div>
   )

@@ -230,6 +230,7 @@ export default function UsuarioTable({
         pagination={{ pageSize: 10 }}
         size="middle"
         bordered
+        scroll={{ x: 'max-content' }}
         locale={{ emptyText: 'No hay usuarios registrados' }}
       />
 
