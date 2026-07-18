@@ -4,11 +4,24 @@ import { requireRole, getUserFromHeaders, hashPassword } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 import type { ApiError } from '@/types'
 
-// GET /api/usuarios → list all active usuarios
-export async function GET(): Promise<NextResponse> {
+// GET /api/usuarios → list all active usuarios (ADMIN sees all, others see self only)
+export async function GET(request: Request): Promise<NextResponse> {
   try {
+    const user = getUserFromHeaders(request.headers)
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuario no autenticado', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      )
+    }
+
+    // ADMIN sees all users; other roles see only themselves
+    const where = user.rol === 'ADMINISTRADOR'
+      ? { activo: true }
+      : { activo: true, id: user.id }
+
     const usuarios = await prisma.usuario.findMany({
-      where: { activo: true },
+      where,
       select: {
         id: true,
         nombre: true,
@@ -52,10 +65,17 @@ export async function POST(request: Request): Promise<NextResponse> {
       )
     }
 
-    // ── Validate password length ──
-    if (password.length < 6) {
+    // ── Validate password strength ──
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 6 caracteres', code: 'INVALID_PASSWORD' },
+        { error: 'La contraseña debe tener al menos 8 caracteres', code: 'INVALID_PASSWORD' },
+        { status: 422 }
+      )
+    }
+    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
+    if (!passwordRegex.test(password)) {
+      return NextResponse.json(
+        { error: 'La contraseña debe contener al menos una mayúscula, un número y un símbolo', code: 'INVALID_PASSWORD' },
         { status: 422 }
       )
     }

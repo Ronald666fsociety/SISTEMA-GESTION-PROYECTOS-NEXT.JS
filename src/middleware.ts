@@ -51,6 +51,7 @@ export async function middleware(request: NextRequest) {
 
     const { allowed, remaining } = checkRateLimit(ip)
     if (!allowed) {
+      console.warn(`[SECURITY] Rate limit exceeded for IP: ${ip} on ${pathname} at ${new Date().toISOString()}`)
       return NextResponse.json(
         { error: 'Demasiados intentos. Intente nuevamente en 15 minutos.', code: 'RATE_LIMITED' },
         { status: 429, headers: { 'Retry-After': String(RATE_LIMIT_WINDOW_MS / 1000) } }

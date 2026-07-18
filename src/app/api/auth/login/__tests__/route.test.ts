@@ -9,6 +9,10 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+vi.mock('@/lib/audit', () => ({
+  logAudit: vi.fn(),
+}))
+
 vi.mock('@/lib/auth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/auth')>()
   return {

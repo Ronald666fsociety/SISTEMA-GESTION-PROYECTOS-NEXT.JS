@@ -23,7 +23,6 @@
     "exceljs": "^4.4.0",
     "frappe-gantt": "^1.2.2",
     "jose": "^6.2.3",
-    "jsonwebtoken": "^9.0.3",
     "next": "16.2.10",
     "pdfkit": "^0.19.1",
     "pg": "^8.22.0",
@@ -34,7 +33,6 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.15.3",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",

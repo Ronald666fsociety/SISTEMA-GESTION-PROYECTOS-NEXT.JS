@@ -26,6 +26,18 @@ vi.mock('@/lib/auth', async (importOriginal) => {
 import { prisma } from '@/lib/prisma'
 import { GET, POST } from '@/app/api/usuarios/route'
 
+function createRequest(role = 'ADMINISTRADOR'): Request {
+  return new Request('http://localhost/api/usuarios', {
+    method: 'GET',
+    headers: {
+      'x-user-id': '1',
+      'x-user-role': role,
+      'x-user-nombre': 'Admin',
+      'x-user-email': 'admin@test.com',
+    },
+  })
+}
+
 function createPOSTRequest(body: unknown, role = 'ADMINISTRADOR'): Request {
   return new Request('http://localhost/api/usuarios', {
     method: 'POST',
@@ -52,7 +64,8 @@ describe('GET /api/usuarios', () => {
     ]
     vi.mocked(prisma.usuario.findMany).mockResolvedValue(mockUsers as any)
 
-    const res = await GET()
+    const req = createRequest()
+    const res = await GET(req)
     const data = await res.json()
 
     expect(res.status).toBe(200)
@@ -63,7 +76,8 @@ describe('GET /api/usuarios', () => {
 
   it('returns empty array when no usuarios', async () => {
     vi.mocked(prisma.usuario.findMany).mockResolvedValue([])
-    const res = await GET()
+    const req = createRequest()
+    const res = await GET(req)
     const data = await res.json()
     expect(res.status).toBe(200)
     expect(data).toEqual([])
@@ -88,7 +102,7 @@ describe('POST /api/usuarios', () => {
     const req = createPOSTRequest({
       nombre: 'New User',
       email: 'new@test.com',
-      password: '123456',
+      password: 'Test1234!',
       rol: 'USUARIO',
     })
     const res = await POST(req)
@@ -104,7 +118,7 @@ describe('POST /api/usuarios', () => {
     const req = createPOSTRequest({
       nombre: 'Test',
       email: 'test@test.com',
-      password: '123456',
+      password: 'Test1234!',
       rol: 'USUARIO',
     }, 'USUARIO')
     const res = await POST(req)

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getUserFromHeaders } from '@/lib/auth'
 import type { NextRequest } from 'next/server'
 import type { ApiError } from '@/types'
 
@@ -23,10 +24,18 @@ export interface GanttResponse {
 
 // GET /api/gantt/proyecto/[idProyecto] → tasks formatted for Gantt engine
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ idProyecto: string }> }
 ): Promise<NextResponse<GanttResponse | ApiError>> {
   try {
+    const user = getUserFromHeaders(request.headers)
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuario no autenticado', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      )
+    }
+
     const { idProyecto } = await params
     const proyectoId = parseInt(idProyecto, 10)
 

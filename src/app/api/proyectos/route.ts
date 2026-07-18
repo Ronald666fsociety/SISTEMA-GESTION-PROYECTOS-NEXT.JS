@@ -6,8 +6,16 @@ import type { ApiError } from '@/types'
 import type { Prisma } from '@prisma/client'
 
 // GET /api/proyectos → list all active proyectos
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
   try {
+    const user = getUserFromHeaders(request.headers)
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuario no autenticado', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      )
+    }
+
     const proyectos = await prisma.proyecto.findMany({
       where: { activo: true },
       include: {

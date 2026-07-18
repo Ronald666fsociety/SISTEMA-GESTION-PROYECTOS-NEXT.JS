@@ -7,10 +7,18 @@ import type { ApiError } from '@/types'
 
 // GET /api/proyectos/[id] → get single proyecto
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
+    const user = getUserFromHeaders(request.headers)
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuario no autenticado', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      )
+    }
+
     const { id } = await params
     const proyectoId = parseInt(id, 10)
 

@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getUserFromHeaders } from '@/lib/auth'
 import type { DashboardResponse, ApiError } from '@/types'
 
-export async function GET(): Promise<NextResponse<DashboardResponse | ApiError>> {
+export async function GET(request: Request): Promise<NextResponse<DashboardResponse | ApiError>> {
   try {
+    const user = getUserFromHeaders(request.headers)
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuario no autenticado', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      )
+    }
+
     // ── Project distribution by estado (for doughnut chart) ──
     const estadosRaw = await prisma.$queryRaw<
       Array<{ estado: string; count: bigint }>

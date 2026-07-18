@@ -13,7 +13,14 @@ import { prisma } from '@/lib/prisma'
 import { GET } from '@/app/api/reportes/[tipo]/route'
 
 function makeReq(url: string): NextRequest {
-  return new Request(url) as unknown as NextRequest
+  return new Request(url, {
+    headers: {
+      'x-user-id': '1',
+      'x-user-role': 'ADMINISTRADOR',
+      'x-user-nombre': 'Admin',
+      'x-user-email': 'admin@test.com',
+    },
+  }) as unknown as NextRequest
 }
 
 describe('GET /api/reportes/semaforo', () => {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { comparePassword, signToken } from '@/lib/auth'
+import { logAudit } from '@/lib/audit'
 import type { LoginRequest, LoginResponse, ApiError } from '@/types'
 
 export async function POST(request: Request): Promise<NextResponse<LoginResponse | ApiError>> {
@@ -21,6 +22,7 @@ export async function POST(request: Request): Promise<NextResponse<LoginResponse
     })
 
     if (!usuario || !usuario.activo) {
+      await logAudit('Auth', 0, 'LOGIN_FALLIDO', 0, `Intento fallido para email: ${body.email} (usuario no encontrado o inactivo)`)
       return NextResponse.json(
         { error: 'Credenciales inválidas', code: 'INVALID_CREDENTIALS' },
         { status: 401 }
@@ -30,6 +32,7 @@ export async function POST(request: Request): Promise<NextResponse<LoginResponse
     // ── Verify password ──
     const passwordValid = await comparePassword(body.password, usuario.password)
     if (!passwordValid) {
+      await logAudit('Auth', usuario.id, 'LOGIN_FALLIDO', usuario.id, `Contraseña incorrecta para ${body.email}`)
       return NextResponse.json(
         { error: 'Credenciales inválidas', code: 'INVALID_CREDENTIALS' },
         { status: 401 }
@@ -43,6 +46,8 @@ export async function POST(request: Request): Promise<NextResponse<LoginResponse
       email: usuario.email,
       rol: usuario.rol,
     })
+
+    await logAudit('Auth', usuario.id, 'LOGIN_EXITOSO', usuario.id, `Inicio de sesión: ${usuario.nombre}`)
 
     return NextResponse.json({
       token,

@@ -63,7 +63,8 @@ describe('GET /api/proyectos', () => {
     ]
     vi.mocked(prisma.proyecto.findMany).mockResolvedValue(mockProyectos as any)
 
-    const res = await GET()
+    const req = createRequest()
+    const res = await GET(req)
     const data = await res.json()
 
     expect(res.status).toBe(200)
@@ -74,7 +75,8 @@ describe('GET /api/proyectos', () => {
 
   it('returns empty array when no proyectos', async () => {
     vi.mocked(prisma.proyecto.findMany).mockResolvedValue([])
-    const res = await GET()
+    const req = createRequest()
+    const res = await GET(req)
     const data = await res.json()
     expect(res.status).toBe(200)
     expect(data).toEqual([])

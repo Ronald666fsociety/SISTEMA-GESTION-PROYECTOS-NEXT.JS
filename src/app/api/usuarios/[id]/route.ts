@@ -5,14 +5,30 @@ import { logAudit } from '@/lib/audit'
 import type { NextRequest } from 'next/server'
 import type { ApiError } from '@/types'
 
-// GET /api/usuarios/[id] → get single usuario
+// GET /api/usuarios/[id] → get single usuario (ADMIN sees any, user sees self only)
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
+    const user = getUserFromHeaders(request.headers)
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuario no autenticado', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      )
+    }
+
     const { id } = await params
     const usuarioId = parseInt(id, 10)
+
+    // Non-admin users can only view their own profile
+    if (user.rol !== 'ADMINISTRADOR' && usuarioId !== user.id) {
+      return NextResponse.json(
+        { error: 'Acceso denegado', code: 'FORBIDDEN' },
+        { status: 403 }
+      )
+    }
 
     const usuario = await prisma.usuario.findUnique({
       where: { id: usuarioId },
@@ -80,12 +96,21 @@ export async function PUT(
       }
     }
 
-    // ── Validate password length if provided ──
-    if (body.password && body.password.length < 6) {
-      return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 6 caracteres', code: 'INVALID_PASSWORD' },
-        { status: 422 }
-      )
+    // ── Validate password strength if provided ──
+    if (body.password) {
+      if (body.password.length < 8) {
+        return NextResponse.json(
+          { error: 'La contraseña debe tener al menos 8 caracteres', code: 'INVALID_PASSWORD' },
+          { status: 422 }
+        )
+      }
+      const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
+      if (!passwordRegex.test(body.password)) {
+        return NextResponse.json(
+          { error: 'La contraseña debe contener al menos una mayúscula, un número y un símbolo', code: 'INVALID_PASSWORD' },
+          { status: 422 }
+        )
+      }
     }
 
     // ── Build update data ──
