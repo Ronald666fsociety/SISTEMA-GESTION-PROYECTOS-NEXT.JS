@@ -26,7 +26,7 @@ export async function GET(
         proyectoId,
         activo: true,
       },
-      orderBy: [{ tareaPadreId: { sort: 'asc', nulls: 'first' } }, { id: 'asc' }],
+      orderBy: [{ tareaPadreId: 'asc' }, { id: 'asc' }],
       include: {
         proyecto: {
           select: { id: true, nombre: true, codigo: true },

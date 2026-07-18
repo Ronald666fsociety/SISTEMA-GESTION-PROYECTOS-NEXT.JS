@@ -93,10 +93,22 @@ export default function ProyectoDetallePage() {
         return
       }
 
-      if (!proyRes.ok) throw new Error('Error al cargar proyecto')
-      if (!tareasRes.ok) throw new Error('Error al cargar tareas')
-      if (!depsRes.ok) throw new Error('Error al cargar dependencias')
-      if (!asigRes.ok) throw new Error('Error al cargar asignaciones')
+      if (!proyRes.ok) {
+        const errJson = await proyRes.json().catch(() => null)
+        throw new Error(errJson?.error || 'Error al cargar el proyecto')
+      }
+      if (!tareasRes.ok) {
+        const errJson = await tareasRes.json().catch(() => null)
+        throw new Error(errJson?.error || 'Error al cargar las tareas')
+      }
+      if (!depsRes.ok) {
+        const errJson = await depsRes.json().catch(() => null)
+        throw new Error(errJson?.error || 'Error al cargar las dependencias')
+      }
+      if (!asigRes.ok) {
+        const errJson = await asigRes.json().catch(() => null)
+        throw new Error(errJson?.error || 'Error al cargar las asignaciones')
+      }
 
       setProyecto(await proyRes.json())
       setTareas(await tareasRes.json())

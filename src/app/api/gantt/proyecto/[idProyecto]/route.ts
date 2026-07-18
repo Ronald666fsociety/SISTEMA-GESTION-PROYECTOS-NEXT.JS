@@ -50,7 +50,7 @@ export async function GET(
           select: { nombre: true },
         },
       },
-      orderBy: [{ fechaInicio: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
+      orderBy: [{ fechaInicio: 'asc' }, { id: 'asc' }],
     })
 
     // ── Fetch dependencies for this project ──
