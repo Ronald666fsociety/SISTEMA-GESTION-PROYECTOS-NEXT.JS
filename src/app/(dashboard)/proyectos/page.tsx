@@ -47,6 +47,13 @@ export default function ProyectosPage() {
         }),
       ])
 
+      if (proyRes.status === 401 || usuRes.status === 401) {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        window.location.href = '/login'
+        return
+      }
+
       if (!proyRes.ok) throw new Error('Error al cargar proyectos')
       if (!usuRes.ok) throw new Error('Error al cargar usuarios')
 

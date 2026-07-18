@@ -78,6 +78,12 @@ export default function AuditoriaTable() {
       })
 
       if (!res.ok) {
+        if (res.status === 401) {
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('auth_user')
+          window.location.href = '/login'
+          return
+        }
         if (res.status === 403) {
           throw new Error('Acceso denegado. Solo administradores pueden ver auditoría.')
         }

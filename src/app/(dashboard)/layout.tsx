@@ -25,14 +25,20 @@ const { useBreakpoint } = Grid
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false)
-  const { user, logout, loading } = useAuth()
+  const { user, logout, loading, isAuthenticated } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
   const screens = useBreakpoint()
 
   const isMobile = screens.md === false
 
-  if (loading) {
+  React.useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/login')
+    }
+  }, [loading, isAuthenticated, router])
+
+  if (loading || !isAuthenticated) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f8fafc' }}>
         <Spin size="large" />

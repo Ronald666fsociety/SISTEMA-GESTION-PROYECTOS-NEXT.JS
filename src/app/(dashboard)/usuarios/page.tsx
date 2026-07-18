@@ -24,6 +24,13 @@ export default function UsuariosPage() {
         },
       })
 
+      if (res.status === 401) {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        window.location.href = '/login'
+        return
+      }
+
       if (!res.ok) throw new Error('Error al cargar usuarios')
 
       setUsuarios(await res.json())

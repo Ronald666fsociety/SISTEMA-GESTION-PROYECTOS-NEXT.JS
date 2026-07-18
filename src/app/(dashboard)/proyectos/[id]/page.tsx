@@ -73,8 +73,9 @@ export default function ProyectoDetallePage() {
     setError(null)
 
     try {
+      const authToken = localStorage.getItem('auth_token')
       const headers = {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${authToken}`,
       }
 
       const [proyRes, tareasRes, depsRes, asigRes, usuariosRes] = await Promise.all([
@@ -84,6 +85,13 @@ export default function ProyectoDetallePage() {
         fetch(`/api/asignaciones/proyecto/${proyectoId}`, { headers }),
         fetch('/api/usuarios', { headers }),
       ])
+
+      if (proyRes.status === 401 || tareasRes.status === 401 || depsRes.status === 401 || asigRes.status === 401) {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        router.push('/login')
+        return
+      }
 
       if (!proyRes.ok) throw new Error('Error al cargar proyecto')
       if (!tareasRes.ok) throw new Error('Error al cargar tareas')
@@ -104,7 +112,7 @@ export default function ProyectoDetallePage() {
     } finally {
       setLoading(false)
     }
-  }, [proyectoId, token])
+  }, [proyectoId, router])
 
   useEffect(() => {
     fetchAll()
