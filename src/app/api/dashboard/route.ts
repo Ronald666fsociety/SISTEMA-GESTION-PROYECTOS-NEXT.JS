@@ -24,7 +24,7 @@ export async function GET(request: Request): Promise<NextResponse<DashboardRespo
       ORDER BY estado
     `
 
-    const estados = estadosRaw.map((e) => ({
+    const estados = estadosRaw.map((e: { estado: string; count: bigint }) => ({
       estado: e.estado,
       count: Number(e.count),
     }))
