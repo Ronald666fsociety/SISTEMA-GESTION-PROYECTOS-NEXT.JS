@@ -3,7 +3,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Mock prisma
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    $queryRaw: vi.fn(),
+    tarea: {
+      aggregate: vi.fn(),
+    },
     proyecto: {
       update: vi.fn(),
     },
@@ -19,9 +21,13 @@ describe('recalcularTotales', () => {
   })
 
   it('sums presupuestoEstimado to presupuestoTotal and costoEjecutado to costoRealTotal', async () => {
-    // suma de presupuesto_estimado = 10000, suma de costo_ejecutado = 4500
-    const mockRawResult = [{ total_presupuesto: '10000', total_costo: '4500' }]
-    vi.mocked(prisma.$queryRaw).mockResolvedValue(mockRawResult)
+    vi.mocked(prisma.tarea.aggregate).mockResolvedValue({
+      _sum: { presupuestoEstimado: 10000 as any, costoEjecutado: 4500 as any },
+      _count: {} as any,
+      _avg: {} as any,
+      _min: {} as any,
+      _max: {} as any,
+    })
 
     await recalcularTotales(1)
 
@@ -35,8 +41,13 @@ describe('recalcularTotales', () => {
   })
 
   it('handles zero tareas gracefully (empty project)', async () => {
-    const mockRawResult = [{ total_presupuesto: '0', total_costo: '0' }]
-    vi.mocked(prisma.$queryRaw).mockResolvedValue(mockRawResult)
+    vi.mocked(prisma.tarea.aggregate).mockResolvedValue({
+      _sum: { presupuestoEstimado: null, costoEjecutado: null },
+      _count: {} as any,
+      _avg: {} as any,
+      _min: {} as any,
+      _max: {} as any,
+    })
 
     await recalcularTotales(2)
 
@@ -50,9 +61,13 @@ describe('recalcularTotales', () => {
   })
 
   it('handles multiple tareas with different costs', async () => {
-    // tarea1: costo=5000, tarea2: costo=3000, tarea3: costo=2000 → total=10000
-    const mockRawResult = [{ total_presupuesto: '25000', total_costo: '10000' }]
-    vi.mocked(prisma.$queryRaw).mockResolvedValue(mockRawResult)
+    vi.mocked(prisma.tarea.aggregate).mockResolvedValue({
+      _sum: { presupuestoEstimado: 25000 as any, costoEjecutado: 10000 as any },
+      _count: {} as any,
+      _avg: {} as any,
+      _min: {} as any,
+      _max: {} as any,
+    })
 
     await recalcularTotales(3)
 
@@ -61,21 +76,6 @@ describe('recalcularTotales', () => {
       data: {
         presupuestoTotal: 25000,
         costoRealTotal: 10000,
-      },
-    })
-  })
-
-  it('handles NULL values from raw query', async () => {
-    const mockRawResult = [{ total_presupuesto: null, total_costo: null }]
-    vi.mocked(prisma.$queryRaw).mockResolvedValue(mockRawResult)
-
-    await recalcularTotales(4)
-
-    expect(prisma.proyecto.update).toHaveBeenCalledWith({
-      where: { id: 4 },
-      data: {
-        presupuestoTotal: 0,
-        costoRealTotal: 0,
       },
     })
   })

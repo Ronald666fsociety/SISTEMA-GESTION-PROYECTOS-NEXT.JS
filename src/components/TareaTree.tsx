@@ -23,6 +23,7 @@ import {
   DeleteOutlined,
   SubnodeOutlined,
 } from '@ant-design/icons'
+import dayjs from 'dayjs'
 import type { Tarea, Usuario } from '@/types'
 
 const { Text } = Typography
@@ -45,6 +46,7 @@ interface TareaFormValues {
   fechaFin?: any
   presupuestoEstimado: number
   costoEjecutado: number
+  progreso?: number
   responsableId?: number | null
   tareaPadreId?: number | null
 }
@@ -58,6 +60,7 @@ export default function TareaTree({
   onTareaChange,
 }: TareaTreeProps) {
   const [modalOpen, setModalOpen] = useState(false)
+  const [editingTarea, setEditingTarea] = useState<Tarea | null>(null)
   const [editProgreso, setEditProgreso] = useState<{
     id: number
     value: number
@@ -102,8 +105,25 @@ export default function TareaTree({
   // ── Handlers ──
 
   const handleAddTarea = (tareaPadreId?: number) => {
+    setEditingTarea(null)
     setParentTareaId(tareaPadreId ?? null)
     form.resetFields()
+    setModalOpen(true)
+  }
+
+  const handleEditTarea = (record: Tarea) => {
+    setEditingTarea(record)
+    setParentTareaId(record.tareaPadreId ?? null)
+    form.setFieldsValue({
+      nombre: record.nombre,
+      descripcion: record.descripcion ?? undefined,
+      responsableId: record.responsableId ?? undefined,
+      fechaInicio: record.fechaInicio ? dayjs(record.fechaInicio) : undefined,
+      fechaFin: record.fechaFin ? dayjs(record.fechaFin) : undefined,
+      presupuestoEstimado: Number(record.presupuestoEstimado ?? 0),
+      costoEjecutado: Number(record.costoEjecutado ?? 0),
+      progreso: record.progreso ?? 0,
+    })
     setModalOpen(true)
   }
 
@@ -117,7 +137,15 @@ export default function TareaTree({
         descripcion: values.descripcion ?? null,
         presupuestoEstimado: values.presupuestoEstimado ?? 0,
         costoEjecutado: values.costoEjecutado ?? 0,
-        proyectoId: proyectoId,
+      }
+
+      if (values.progreso !== undefined) {
+        payload.progreso = values.progreso
+      }
+
+      if (!editingTarea) {
+        payload.proyectoId = proyectoId
+        if (parentTareaId) payload.tareaPadreId = parentTareaId
       }
 
       // Convert dayjs objects from DatePicker to ISO strings
@@ -125,17 +153,26 @@ export default function TareaTree({
         payload.fechaInicio = typeof values.fechaInicio === 'string'
           ? values.fechaInicio
           : values.fechaInicio.toISOString()
+      } else {
+        payload.fechaInicio = null
       }
       if (values.fechaFin) {
         payload.fechaFin = typeof values.fechaFin === 'string'
           ? values.fechaFin
           : values.fechaFin.toISOString()
+      } else {
+        payload.fechaFin = null
       }
-      if (values.responsableId) payload.responsableId = values.responsableId
-      if (parentTareaId) payload.tareaPadreId = parentTareaId
 
-      const res = await fetch('/api/tareas', {
-        method: 'POST',
+      if (values.responsableId !== undefined) {
+        payload.responsableId = values.responsableId ?? null
+      }
+
+      const url = editingTarea ? `/api/tareas/${editingTarea.id}` : '/api/tareas'
+      const method = editingTarea ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
@@ -145,11 +182,12 @@ export default function TareaTree({
 
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error || 'Error al crear tarea')
+        throw new Error(err.error || `Error al ${editingTarea ? 'actualizar' : 'crear'} tarea`)
       }
 
-      message.success('Tarea creada correctamente')
+      message.success(`Tarea ${editingTarea ? 'actualizada' : 'creada'} correctamente`)
       setModalOpen(false)
+      setEditingTarea(null)
       onTareaChange()
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -301,7 +339,7 @@ export default function TareaTree({
     {
       title: 'Acciones',
       key: 'acciones',
-      width: 140,
+      width: 160,
       render: (_: unknown, record: Tarea) =>
         puedeEditar ? (
           <Space>
@@ -310,17 +348,25 @@ export default function TareaTree({
               size="small"
               icon={<PlusOutlined />}
               onClick={() => handleAddTarea(record.id)}
+              title="Agregar subtarea"
             >
               Sub
             </Button>
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEditTarea(record)}
+              title="Editar tarea"
+            />
             <Popconfirm
               title="Eliminar tarea"
-              description="¿Está seguro?"
+              description="¿Está seguro de eliminar esta tarea?"
               onConfirm={() => handleDeleteTarea(record.id)}
               okText="Sí"
               cancelText="No"
             >
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} title="Eliminar tarea" />
             </Popconfirm>
           </Space>
         ) : null,
@@ -360,19 +406,28 @@ export default function TareaTree({
         locale={{ emptyText: 'No hay tareas registradas' }}
       />
 
-      {/* ── Create tarea modal ── */}
+      {/* ── Create / Edit tarea modal ── */}
       <Modal
-        title={parentTareaId ? 'Nueva Subtarea' : 'Nueva Tarea'}
+        title={
+          editingTarea
+            ? 'Editar Tarea'
+            : parentTareaId
+            ? 'Nueva Subtarea'
+            : 'Nueva Tarea'
+        }
         open={modalOpen}
         onOk={handleSubmitTarea}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => {
+          setModalOpen(false)
+          setEditingTarea(null)
+        }}
         confirmLoading={submitting}
-        okText="Crear"
+        okText={editingTarea ? 'Guardar Cambios' : 'Crear'}
         cancelText="Cancelar"
         destroyOnHidden
         width={560}
       >
-        <Form form={form} layout="vertical" initialValues={{ presupuestoEstimado: 0, costoEjecutado: 0 }}>
+        <Form form={form} layout="vertical" initialValues={{ presupuestoEstimado: 0, costoEjecutado: 0, progreso: 0 }}>
           <Form.Item
             name="nombre"
             label="Nombre"
@@ -380,9 +435,11 @@ export default function TareaTree({
           >
             <Input placeholder="Nombre de la tarea" />
           </Form.Item>
+
           <Form.Item name="descripcion" label="Descripción">
             <TextArea rows={2} placeholder="Descripción (opcional)" />
           </Form.Item>
+
           <Form.Item name="responsableId" label="Responsable">
             <Select
               placeholder="Seleccionar responsable"
@@ -397,12 +454,21 @@ export default function TareaTree({
               ))}
             </Select>
           </Form.Item>
+
           <Form.Item name="fechaInicio" label="Fecha de Inicio">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
+
           <Form.Item name="fechaFin" label="Fecha de Fin">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
+
+          {editingTarea && (
+            <Form.Item name="progreso" label="Progreso (%)">
+              <InputNumber min={0} max={100} style={{ width: '100%' }} prefix="%" />
+            </Form.Item>
+          )}
+
           <Form.Item
             name="presupuestoEstimado"
             label="Presupuesto Estimado (Bs)"
@@ -414,6 +480,7 @@ export default function TareaTree({
               prefix="Bs "
             />
           </Form.Item>
+
           <Form.Item
             name="costoEjecutado"
             label="Costo Ejecutado (Bs)"

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: __dirname,
+  },
   transpilePackages: ["antd", "@ant-design/icons", "@ant-design/nextjs-registry", "frappe-gantt", "chart.js"],
   serverExternalPackages: ["pdfkit", "exceljs"],
 
