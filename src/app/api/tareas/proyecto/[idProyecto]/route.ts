@@ -21,11 +21,23 @@ export async function GET(
     const { idProyecto } = await params
     const proyectoId = parseInt(idProyecto, 10)
 
+    const isFullAccess = ['ADMINISTRADOR', 'JEFE_PROYECTO'].includes(user.rol)
+
+    const where: any = {
+      proyectoId,
+      activo: true,
+      ...(!isFullAccess
+        ? {
+            OR: [
+              { responsableId: user.id },
+              { asignaciones: { some: { usuarioId: user.id } } },
+            ],
+          }
+        : {}),
+    }
+
     const tareas = await prisma.tarea.findMany({
-      where: {
-        proyectoId,
-        activo: true,
-      },
+      where,
       orderBy: [{ tareaPadreId: 'asc' }, { id: 'asc' }],
       include: {
         proyecto: {

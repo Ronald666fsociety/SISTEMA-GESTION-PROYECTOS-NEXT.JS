@@ -22,6 +22,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   SubnodeOutlined,
+  CheckOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import type { Tarea, Usuario } from '@/types'
@@ -369,7 +370,16 @@ export default function TareaTree({
               <Button type="link" size="small" danger icon={<DeleteOutlined />} title="Eliminar tarea" />
             </Popconfirm>
           </Space>
-        ) : null,
+        ) : (
+          <Button
+            type="primary"
+            size="small"
+            icon={<CheckOutlined />}
+            onClick={() => setEditProgreso({ id: record.id, value: record.progreso })}
+          >
+            Avance
+          </Button>
+        ),
     },
   ]
 

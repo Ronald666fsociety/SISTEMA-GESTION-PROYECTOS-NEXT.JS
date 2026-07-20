@@ -38,6 +38,28 @@ export async function GET(
       )
     }
 
+    if (user.rol !== 'ADMINISTRADOR') {
+      const hasAccess =
+        proyecto.jefeProyectoId === user.id ||
+        (await prisma.tarea.findFirst({
+          where: {
+            proyectoId,
+            activo: true,
+            OR: [
+              { responsableId: user.id },
+              { asignaciones: { some: { usuarioId: user.id } } },
+            ],
+          },
+        })) !== null
+
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: 'Acceso denegado a este proyecto', code: 'FORBIDDEN' },
+          { status: 403 }
+        )
+      }
+    }
+
     return NextResponse.json({
       id: proyecto.id,
       codigo: proyecto.codigo,

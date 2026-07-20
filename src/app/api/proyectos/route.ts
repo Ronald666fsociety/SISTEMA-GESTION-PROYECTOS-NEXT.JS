@@ -16,8 +16,21 @@ export async function GET(request: Request): Promise<NextResponse> {
       )
     }
 
+    const where: Prisma.ProyectoWhereInput = {
+      activo: true,
+      ...(user.rol !== 'ADMINISTRADOR'
+        ? {
+            OR: [
+              { jefeProyectoId: user.id },
+              { tareas: { some: { responsableId: user.id, activo: true } } },
+              { tareas: { some: { asignaciones: { some: { usuarioId: user.id } }, activo: true } } },
+            ],
+          }
+        : {}),
+    }
+
     const proyectos = await prisma.proyecto.findMany({
-      where: { activo: true },
+      where,
       include: {
         jefeProyecto: {
           select: { id: true, nombre: true, email: true },
