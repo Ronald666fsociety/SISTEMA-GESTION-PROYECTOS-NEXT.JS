@@ -32,6 +32,7 @@ const { Option } = Select
 interface TareaTreeProps {
   tareas: Tarea[]
   usuarios: Usuario[]
+  proyectoId: number
   puedeEditar: boolean
   usuarioActual: { id: number; rol: string }
   onTareaChange: () => void
@@ -40,8 +41,8 @@ interface TareaTreeProps {
 interface TareaFormValues {
   nombre: string
   descripcion?: string
-  fechaInicio?: string
-  fechaFin?: string
+  fechaInicio?: any
+  fechaFin?: any
   presupuestoEstimado: number
   costoEjecutado: number
   responsableId?: number | null
@@ -51,6 +52,7 @@ interface TareaFormValues {
 export default function TareaTree({
   tareas,
   usuarios,
+  proyectoId,
   puedeEditar,
   usuarioActual,
   onTareaChange,
@@ -115,11 +117,20 @@ export default function TareaTree({
         descripcion: values.descripcion ?? null,
         presupuestoEstimado: values.presupuestoEstimado ?? 0,
         costoEjecutado: values.costoEjecutado ?? 0,
-        proyectoId: tareas[0]?.proyectoId,
+        proyectoId: proyectoId,
       }
 
-      if (values.fechaInicio) payload.fechaInicio = values.fechaInicio
-      if (values.fechaFin) payload.fechaFin = values.fechaFin
+      // Convert dayjs objects from DatePicker to ISO strings
+      if (values.fechaInicio) {
+        payload.fechaInicio = typeof values.fechaInicio === 'string'
+          ? values.fechaInicio
+          : values.fechaInicio.toISOString()
+      }
+      if (values.fechaFin) {
+        payload.fechaFin = typeof values.fechaFin === 'string'
+          ? values.fechaFin
+          : values.fechaFin.toISOString()
+      }
       if (values.responsableId) payload.responsableId = values.responsableId
       if (parentTareaId) payload.tareaPadreId = parentTareaId
 

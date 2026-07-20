@@ -209,6 +209,51 @@ async function main() {
   const c3 = await crearTarea(cloud, null, 'Migracion de Servidores Web y BD',
     new Date('2026-08-11'), new Date('2026-09-30'), 0, 110000, 0, maria.id)
 
+  // ── SISTEMA DE FACTURACION TAREAS ──
+  const fact = await prisma.proyecto.create({
+    data: {
+      codigo: '3,123',
+      nombre: 'SISTEMA DE FACTURACION',
+      descripcion: 'REALIZAR EN ANALISIS DE LOS REQUERIMIENTOS DEL SISTEMA DE FACTURACION ELECTRONICA',
+      presupuestoTotal: 120000,
+      costoRealTotal: 45000,
+      estado: 'EN_CURSO' as EstadoProyecto,
+      fechaInicio: new Date('2026-07-01'),
+      fechaFin: new Date('2026-10-31'),
+      jefeProyectoId: jefe.id,
+      activo: true,
+    },
+  })
+
+  const f1 = await crearTarea(fact, null, 'Analisis de Requerimientos',
+    new Date('2026-07-01'), new Date('2026-07-15'), 100, 12000, 11500, ana.id)
+
+  const f2 = await crearTarea(fact, null, 'Diseno de Base de Datos',
+    new Date('2026-07-10'), new Date('2026-07-25'), 100, 8000, 7800, pedro.id)
+
+  const f3 = await crearTarea(fact, null, 'Desarrollo Modulo de Facturacion',
+    new Date('2026-07-20'), new Date('2026-08-20'), 65, 35000, 20000, ana.id)
+
+  const f3_1 = await crearTarea(fact, f3.id, 'Emision de Facturas Electronicas',
+    new Date('2026-07-20'), new Date('2026-08-05'), 80, 15000, 10000, ana.id)
+
+  const f3_2 = await crearTarea(fact, f3.id, 'Generacion de Reportes PDF',
+    new Date('2026-08-01'), new Date('2026-08-20'), 40, 10000, 5000, pedro.id)
+
+  const f4 = await crearTarea(fact, null, 'Integracion con SIAT (Impuestos)',
+    new Date('2026-08-15'), new Date('2026-09-15'), 20, 25000, 5000, maria.id)
+
+  const f5 = await crearTarea(fact, null, 'Modulo de Inventarios y Stock',
+    new Date('2026-09-01'), new Date('2026-09-30'), 0, 18000, 0, pedro.id)
+
+  const f6 = await crearTarea(fact, null, 'Pruebas Integrales y QA',
+    new Date('2026-09-20'), new Date('2026-10-15'), 0, 12000, 0, maria.id)
+
+  const f7 = await crearTarea(fact, null, 'Despliegue y Capacitacion',
+    new Date('2026-10-10'), new Date('2026-10-31'), 0, 10000, 0, ana.id)
+
+  console.log('>>> Tareas de SISTEMA DE FACTURACION creadas.')
+
   console.log('>>> Tareas de prueba creadas exitosamente.')
 
   // ── 5. Seed Dependencias ──
@@ -229,6 +274,14 @@ async function main() {
   await crearDependencia(c1.id, c2.id, 'FIN_INICIO')
   await crearDependencia(c2.id, c3.id, 'FIN_INICIO')
 
+  // FACTURACION dependencies
+  await crearDependencia(f1.id, f2.id, 'FIN_INICIO')
+  await crearDependencia(f2.id, f3.id, 'FIN_INICIO')
+  await crearDependencia(f3.id, f4.id, 'FIN_INICIO')
+  await crearDependencia(f4.id, f5.id, 'FIN_INICIO')
+  await crearDependencia(f5.id, f6.id, 'FIN_INICIO')
+  await crearDependencia(f6.id, f7.id, 'FIN_INICIO')
+
   console.log('>>> Dependencias creadas.')
 
   // ── 6. Seed Asignaciones ──
@@ -242,6 +295,15 @@ async function main() {
   await crearAsignacion(t2.id, ana.id, 80, 75)
   await crearAsignacion(t3.id, pedro.id, 120, 80)
   await crearAsignacion(t4.id, maria.id, 60, 15)
+
+  // FACTURACION assignments
+  await crearAsignacion(f1.id, ana.id, 60, 58)
+  await crearAsignacion(f2.id, pedro.id, 40, 38)
+  await crearAsignacion(f3.id, ana.id, 100, 65)
+  await crearAsignacion(f4.id, maria.id, 80, 16)
+  await crearAsignacion(f5.id, pedro.id, 60, 0)
+  await crearAsignacion(f6.id, maria.id, 50, 0)
+  await crearAsignacion(f7.id, ana.id, 40, 0)
 
   console.log('>>> Asignaciones creadas.')
 

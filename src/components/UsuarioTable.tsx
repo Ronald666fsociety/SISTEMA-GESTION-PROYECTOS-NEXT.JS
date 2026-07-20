@@ -83,6 +83,15 @@ export default function UsuarioTable({
         return
       }
 
+      // Validate password matches backend requirements
+      if (!isEdit && values.password) {
+        const pwRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
+        if (!pwRegex.test(values.password)) {
+          message.error('La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo')
+          return
+        }
+      }
+
       const method = isEdit ? 'PUT' : 'POST'
       const url = isEdit ? `/api/usuarios/${editUsuario!.id}` : '/api/usuarios'
 
@@ -94,8 +103,8 @@ export default function UsuarioTable({
 
       // Only include password on create, or on edit if provided
       if (!isEdit) {
-        if (!values.password || values.password.length < 6) {
-          message.error('La contraseña debe tener al menos 6 caracteres')
+        if (!values.password || values.password.length < 8) {
+          message.error('La contraseña debe tener al menos 8 caracteres')
           return
         }
         body.password = values.password
@@ -223,6 +232,19 @@ export default function UsuarioTable({
 
   return (
     <div>
+      <Space style={{ marginBottom: 16 }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={openCreate}
+        >
+          Nuevo Usuario
+        </Button>
+        <Text type="secondary">
+          {usuarios.length} usuario{usuarios.length !== 1 ? 's' : ''} registrado{usuarios.length !== 1 ? 's' : ''}
+        </Text>
+      </Space>
+
       <Table
         dataSource={usuarios}
         columns={columns}
@@ -279,7 +301,7 @@ export default function UsuarioTable({
                 ? []
                 : [
                     { required: true, message: 'La contraseña es requerida' },
-                    { min: 6, message: 'Mínimo 6 caracteres' },
+                    { min: 8, message: 'Mínimo 8 caracteres, una mayúscula, un número y un símbolo' },
                   ]
             }
           >

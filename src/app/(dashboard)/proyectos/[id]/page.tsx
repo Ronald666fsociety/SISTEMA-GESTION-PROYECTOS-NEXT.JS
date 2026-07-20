@@ -203,6 +203,7 @@ export default function ProyectoDetallePage() {
         <TareaTree
           tareas={tareas}
           usuarios={usuarios}
+          proyectoId={proyectoId}
           puedeEditar={puedeEditar}
           usuarioActual={{
             id: user?.id ?? 0,
