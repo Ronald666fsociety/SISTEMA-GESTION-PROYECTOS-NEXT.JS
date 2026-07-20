@@ -5,20 +5,15 @@ import type { DashboardResponse } from '@/types'
 export const dynamic = 'force-dynamic'
 
 async function getDashboardData(): Promise<DashboardResponse> {
-  // ── Project distribution by estado (for doughnut chart) ──
-  const estadosRaw = await prisma.$queryRaw<
-    Array<{ estado: string; count: bigint }>
-  >`
-    SELECT estado::text, COUNT(*)::bigint AS count
-    FROM proyectos
-    WHERE activo = true
-    GROUP BY estado
-    ORDER BY estado
-  `
+  const estadosGroup = await prisma.proyecto.groupBy({
+    by: ['estado'],
+    where: { activo: true },
+    _count: { id: true },
+  })
 
-  const estados = estadosRaw.map((e: { estado: string; count: bigint }) => ({
+  const estados = estadosGroup.map((e) => ({
     estado: e.estado,
-    count: Number(e.count),
+    count: e._count.id,
   }))
 
   // ── Budget vs actual cost per project (for bar chart) ──

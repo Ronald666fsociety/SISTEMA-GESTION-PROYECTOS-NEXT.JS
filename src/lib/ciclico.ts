@@ -14,24 +14,25 @@ export async function detectaCiclo(
 ): Promise<boolean> {
   if (origenId === destinoId) return true
 
-  const result = await prisma.$queryRaw<Array<{ ciclo: boolean }>>`
-    WITH RECURSIVE ciclo_cte AS (
-      -- Base: start at destinoId
-      SELECT dt.tarea_destino_id AS next_id
-      FROM dependencias_tarea dt
-      WHERE dt.tarea_origen_id = ${destinoId}
+  const visited = new Set<number>()
+  const queue = [destinoId]
 
-      UNION ALL
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    if (current === origenId) return true
+    visited.add(current)
 
-      -- Recursive: follow dependencies forward
-      SELECT dt.tarea_destino_id
-      FROM dependencias_tarea dt
-      INNER JOIN ciclo_cte c ON dt.tarea_origen_id = c.next_id
-    )
-    SELECT EXISTS(
-      SELECT 1 FROM ciclo_cte WHERE next_id = ${origenId}
-    ) AS ciclo
-  `
+    const nextDeps = await prisma.dependenciaTarea.findMany({
+      where: { tareaOrigenId: current },
+      select: { tareaDestinoId: true },
+    })
 
-  return result[0]?.ciclo ?? false
+    for (const dep of nextDeps) {
+      if (!visited.has(dep.tareaDestinoId)) {
+        queue.push(dep.tareaDestinoId)
+      }
+    }
+  }
+
+  return false
 }

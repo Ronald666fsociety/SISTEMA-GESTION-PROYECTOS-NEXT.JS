@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    $queryRaw: vi.fn(),
+    dependenciaTarea: {
+      findMany: vi.fn(),
+    },
   },
 }))
 
@@ -17,26 +19,21 @@ describe('detectaCiclo', () => {
   it('returns true when same task (self-reference)', async () => {
     const result = await detectaCiclo(1, 1)
     expect(result).toBe(true)
-    expect(prisma.$queryRaw).not.toHaveBeenCalled()
+    expect(prisma.dependenciaTarea.findMany).not.toHaveBeenCalled()
   })
 
   it('returns true when cycle exists (chain that closes loop)', async () => {
-    // If a dependency from 1→2, 2→3 exists, adding 3→1 would close the loop
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ ciclo: true }])
+    // If adding 3 -> 1, starting BFS at 3: 3 -> 2 -> 1, reaching 1
+    vi.mocked(prisma.dependenciaTarea.findMany)
+      .mockResolvedValueOnce([{ tareaDestinoId: 2 }] as any)
+      .mockResolvedValueOnce([{ tareaDestinoId: 1 }] as any)
 
     const result = await detectaCiclo(1, 3)
     expect(result).toBe(true)
   })
 
   it('returns false when no cycle exists', async () => {
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ ciclo: false }])
-
-    const result = await detectaCiclo(1, 2)
-    expect(result).toBe(false)
-  })
-
-  it('returns false when raw query returns empty array', async () => {
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([])
+    vi.mocked(prisma.dependenciaTarea.findMany).mockResolvedValue([])
 
     const result = await detectaCiclo(1, 2)
     expect(result).toBe(false)
