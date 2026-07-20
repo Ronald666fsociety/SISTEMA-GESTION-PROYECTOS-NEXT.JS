@@ -1,70 +1,55 @@
-import { prisma } from '@/lib/prisma'
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { Spin, Alert } from 'antd'
 import DashboardCharts from '@/components/DashboardCharts'
 import type { DashboardResponse } from '@/types'
 
-export const dynamic = 'force-dynamic'
+export default function DashboardPage() {
+  const [data, setData] = useState<DashboardResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-async function getDashboardData(): Promise<DashboardResponse> {
-  const estadosGroup = await prisma.proyecto.groupBy({
-    by: ['estado'],
-    where: { activo: true },
-    _count: { id: true },
-  })
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const token = localStorage.getItem('auth_token')
+        const res = await fetch('/api/dashboard', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
 
-  const estados = estadosGroup.map((e) => ({
-    estado: e.estado,
-    count: e._count.id,
-  }))
+        if (res.status === 401) {
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('auth_user')
+          window.location.href = '/login'
+          return
+        }
 
-  // ── Budget vs actual cost per project (for bar chart) ──
-  const proyectos = await prisma.proyecto.findMany({
-    where: { activo: true },
-    select: {
-      id: true,
-      nombre: true,
-      presupuestoTotal: true,
-      costoRealTotal: true,
-    },
-    orderBy: { id: 'asc' },
-  })
+        if (!res.ok) throw new Error('Error al obtener datos del dashboard')
 
-  const presupuestos = proyectos.map((p) => ({
-    id: p.id,
-    nombre: p.nombre,
-    presupuesto: Number(p.presupuestoTotal),
-    costoReal: Number(p.costoRealTotal),
-  }))
+        const json = await res.json()
+        setData(json)
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Error al cargar dashboard')
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  // ── Stats counts ──
-  const total = proyectos.length
-  const planificados = estados.find((e) => e.estado === 'PLANIFICADO')?.count ?? 0
-  const enCurso = estados.find((e) => e.estado === 'EN_CURSO')?.count ?? 0
-  const finalizados = estados.find((e) => e.estado === 'FINALIZADO')?.count ?? 0
+    fetchDashboard()
+  }, [])
 
-  // ── Recent projects (last 5) ──
-  const recentProyectos = await prisma.proyecto.findMany({
-    where: { activo: true },
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      jefeProyecto: { select: { nombre: true } },
-    },
-  })
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 64 }}>
+        <Spin size="large" />
+      </div>
+    )
+  }
 
-  const recientes = recentProyectos.map((p) => ({
-    id: p.id,
-    nombre: p.nombre,
-    estado: p.estado,
-    fechaInicio: p.fechaInicio?.toISOString() ?? null,
-    fechaFin: p.fechaFin?.toISOString() ?? null,
-    jefeProyecto: p.jefeProyecto.nombre,
-  }))
-
-  return { estados, presupuestos, stats: { total, planificados, enCurso, finalizados }, recientes }
-}
-
-export default async function DashboardPage() {
-  const data = await getDashboardData()
+  if (error || !data) {
+    return <Alert title="Error" description={error ?? 'Error al cargar dashboard'} type="error" showIcon />
+  }
 
   return <DashboardCharts data={data} />
 }

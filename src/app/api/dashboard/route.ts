@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromHeaders } from '@/lib/auth'
 import type { DashboardResponse, ApiError } from '@/types'
+import type { Prisma } from '@prisma/client'
 
 export async function GET(request: Request): Promise<NextResponse<DashboardResponse | ApiError>> {
   try {
@@ -13,9 +14,22 @@ export async function GET(request: Request): Promise<NextResponse<DashboardRespo
       )
     }
 
+    const projectWhere: Prisma.ProyectoWhereInput = {
+      activo: true,
+      ...(user.rol !== 'ADMINISTRADOR'
+        ? {
+            OR: [
+              { jefeProyectoId: user.id },
+              { tareas: { some: { responsableId: user.id, activo: true } } },
+              { tareas: { some: { asignaciones: { some: { usuarioId: user.id } }, activo: true } } },
+            ],
+          }
+        : {}),
+    }
+
     const estadosGroup = await prisma.proyecto.groupBy({
       by: ['estado'],
-      where: { activo: true },
+      where: projectWhere,
       _count: { id: true },
     })
 
@@ -26,7 +40,7 @@ export async function GET(request: Request): Promise<NextResponse<DashboardRespo
 
     // ── Budget vs actual cost per project (for bar chart) ──
     const proyectos = await prisma.proyecto.findMany({
-      where: { activo: true },
+      where: projectWhere,
       select: {
         id: true,
         nombre: true,
@@ -51,7 +65,7 @@ export async function GET(request: Request): Promise<NextResponse<DashboardRespo
 
     // ── Recent projects (last 5) ──
     const recentProyectos = await prisma.proyecto.findMany({
-      where: { activo: true },
+      where: projectWhere,
       take: 5,
       orderBy: { createdAt: 'desc' },
       include: {
