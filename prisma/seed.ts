@@ -63,97 +63,97 @@ async function main() {
 
   // ── 3. Seed Proyectos (6 — varied states, budgets, dates) ──
 
-  // 1. Portal Web Clientes — EN_CURSO (VERDE)
-  const pwc = await prisma.proyecto.create({
+  // 1. App Móvil Delivery — ROJO (Sobrecosto 80% y Retraso Crítico)
+  const amd = await prisma.proyecto.create({
     data: {
-      codigo: 'PWC-2026',
-      nombre: 'Portal Web Clientes',
-      descripcion: 'Desarrollo del portal web de autogestión para clientes con catálogo, carrito y pagos integrados',
-      presupuestoTotal: 2500,
-      costoRealTotal: 1300,
+      codigo: 'AMD-2026',
+      nombre: 'App Móvil Delivery',
+      descripcion: 'Aplicación móvil para delivery con geolocalización de tiendas y notificaciones push en tiempo real',
+      presupuestoTotal: 2000,
+      costoRealTotal: 3600,
       estado: 'EN_CURSO' as EstadoProyecto,
-      fechaInicio: new Date('2026-06-01'),
-      fechaFin: new Date('2026-10-15'),
+      fechaInicio: new Date('2026-01-01'),
+      fechaFin: new Date('2026-06-30'),
       jefeProyectoId: jefe.id,
       activo: true,
     },
   })
 
-  // 2. App Móvil Delivery — EN_CURSO (AMARILLO - sobrecosto moderado del 20%)
-  const amd = await prisma.proyecto.create({
+  // 2. Sistema Facturación SIAT — ROJO (Sobrecosto 40% y Retraso 55%)
+  const sfe = await prisma.proyecto.create({
     data: {
-      codigo: 'AMD-2026',
-      nombre: 'App Móvil Delivery',
-      descripcion: 'Aplicación móvil para delivery con geolocalización de tiendas, pedidos en tiempo real y notificaciones push',
-      presupuestoTotal: 1500,
-      costoRealTotal: 1800,
+      codigo: 'SIAT-2026',
+      nombre: 'Sistema Facturación SIAT',
+      descripcion: 'Sistema integral de facturación electrónica con integración SIAT e impuestos nacionales',
+      presupuestoTotal: 3500,
+      costoRealTotal: 4900,
       estado: 'EN_CURSO' as EstadoProyecto,
-      fechaInicio: new Date('2026-07-01'),
+      fechaInicio: new Date('2026-02-01'),
+      fechaFin: new Date('2026-08-31'),
+      jefeProyectoId: jefe.id,
+      activo: true,
+    },
+  })
+
+  // 3. Migración Cloud AWS — AMARILLO (Sobrecosto moderado 20%)
+  const aws = await prisma.proyecto.create({
+    data: {
+      codigo: 'AWS-2026',
+      nombre: 'Migración Cloud AWS',
+      descripcion: 'Migración completa de infraestructura on-premise a AWS: redes, bases de datos y contingencia',
+      presupuestoTotal: 4000,
+      costoRealTotal: 4800,
+      estado: 'EN_CURSO' as EstadoProyecto,
+      fechaInicio: new Date('2026-05-01'),
       fechaFin: new Date('2026-11-30'),
       jefeProyectoId: jefe.id,
       activo: true,
     },
   })
 
-  // 3. Migración Cloud AWS — EN_CURSO (ROJO - retraso crítico en avance real)
-  const aws = await prisma.proyecto.create({
-    data: {
-      codigo: 'AWS-2026',
-      nombre: 'Migración Cloud AWS',
-      descripcion: 'Migración completa de infraestructura on-premise a AWS: redes, bases de datos y plan de contingencia',
-      presupuestoTotal: 4500,
-      costoRealTotal: 2200,
-      estado: 'EN_CURSO' as EstadoProyecto,
-      fechaInicio: new Date('2026-04-01'),
-      fechaFin: new Date('2026-09-30'),
-      jefeProyectoId: jefe.id,
-      activo: true,
-    },
-  })
-
-  // 4. Sistema Facturación Electrónica — EN_CURSO (ROJO - sobrecosto elevado del 43.75%)
-  const sfe = await prisma.proyecto.create({
-    data: {
-      codigo: 'SFE-2026',
-      nombre: 'Sistema Facturación Electrónica',
-      descripcion: 'Sistema integral de facturación electrónica con integración SIAT, módulo de inventarios y reportes fiscales',
-      presupuestoTotal: 3200,
-      costoRealTotal: 4600,
-      estado: 'EN_CURSO' as EstadoProyecto,
-      fechaInicio: new Date('2026-05-01'),
-      fechaFin: new Date('2026-12-31'),
-      jefeProyectoId: jefe.id,
-      activo: true,
-    },
-  })
-
-  // 5. Intranet Corporativa v2 — EN_CURSO (VERDE - desarrollo óptimo al día)
-  const int = await prisma.proyecto.create({
-    data: {
-      codigo: 'INT-2026',
-      nombre: 'Intranet Corporativa v2',
-      descripcion: 'Rediseño completo de la intranet corporativa con módulos de RRHH, gestión documental y dashboard de productividad',
-      presupuestoTotal: 1800,
-      costoRealTotal: 1750,
-      estado: 'EN_CURSO' as EstadoProyecto,
-      fechaInicio: new Date('2026-01-15'),
-      fechaFin: new Date('2026-05-30'),
-      jefeProyectoId: jefe.id,
-      activo: true,
-    },
-  })
-
-  // 6. ERP Módulo Inventarios — EN_CURSO (AMARILLO - sobrecosto del 20%)
+  // 4. Plataforma E-Commerce V2 — AMARILLO (Desviación moderada)
   const erp = await prisma.proyecto.create({
     data: {
-      codigo: 'ERP-INV-2026',
-      nombre: 'ERP Módulo Inventarios',
-      descripcion: 'Módulo de gestión de inventarios para el ERP corporativo con integración al sistema legacy de almacenes',
+      codigo: 'ECM-2026',
+      nombre: 'Plataforma E-Commerce V2',
+      descripcion: 'Plataforma de comercio electrónico con pasarela de pagos integrados y catálogo dinámico',
       presupuestoTotal: 2800,
       costoRealTotal: 3360,
       estado: 'EN_CURSO' as EstadoProyecto,
-      fechaInicio: new Date('2026-03-01'),
-      fechaFin: new Date('2026-09-15'),
+      fechaInicio: new Date('2026-04-15'),
+      fechaFin: new Date('2026-10-30'),
+      jefeProyectoId: jefe.id,
+      activo: true,
+    },
+  })
+
+  // 5. Portal Corporativo Clientes — VERDE (Excelente desempeño, dentro de presupuesto)
+  const pwc = await prisma.proyecto.create({
+    data: {
+      codigo: 'PWC-2026',
+      nombre: 'Portal Corporativo Clientes',
+      descripcion: 'Portal web de autogestión para clientes con dashboard de métricas y soporte',
+      presupuestoTotal: 2500,
+      costoRealTotal: 1400,
+      estado: 'EN_CURSO' as EstadoProyecto,
+      fechaInicio: new Date('2026-06-01'),
+      fechaFin: new Date('2026-12-15'),
+      jefeProyectoId: jefe.id,
+      activo: true,
+    },
+  })
+
+  // 6. Intranet Recursos Humanos — VERDE (Finalizado con superávit)
+  const int = await prisma.proyecto.create({
+    data: {
+      codigo: 'INT-2026',
+      nombre: 'Intranet Recursos Humanos',
+      descripcion: 'Rediseño de la intranet corporativa para el departamento de RRHH y gestión documental',
+      presupuestoTotal: 1800,
+      costoRealTotal: 1650,
+      estado: 'FINALIZADO' as EstadoProyecto,
+      fechaInicio: new Date('2026-01-01'),
+      fechaFin: new Date('2026-05-30'),
       jefeProyectoId: jefe.id,
       activo: true,
     },
