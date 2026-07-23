@@ -15,12 +15,15 @@ import {
   Spin,
   Alert,
   Space,
+  Tabs,
 } from 'antd'
 import {
-  DollarOutlined,
+  WalletOutlined,
   PieChartOutlined,
   TeamOutlined,
+  ScheduleOutlined,
 } from '@ant-design/icons'
+import GanttChart from '@/components/GanttChart'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -107,6 +110,9 @@ export default function ReportesView() {
   const [cargaLoading, setCargaLoading] = useState(false)
   const [selectedUsuario, setSelectedUsuario] = useState<number | undefined>()
 
+  // Gantt
+  const [selectedGanttProyecto, setSelectedGanttProyecto] = useState<number | undefined>()
+
   // Fetch initial data
   useEffect(() => {
     const token = localStorage.getItem('auth_token')
@@ -115,7 +121,13 @@ export default function ReportesView() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
-      .then((data) => setProyectos(data))
+      .then((data) => {
+        setProyectos(data)
+        if (Array.isArray(data) && data.length > 0) {
+          setSelectedGanttProyecto(data[0].id)
+          setSelectedProyectoSemaforo(data[0].id)
+        }
+      })
       .catch(() => {})
 
     fetch('/api/usuarios', {
@@ -210,20 +222,26 @@ export default function ReportesView() {
   }
 
   const presupuestoColumns = [
+    {
+      title: '#',
+      key: 'index',
+      width: 50,
+      render: (_: unknown, __: unknown, index: number) => index + 1,
+    },
     { title: 'Proyecto', dataIndex: 'proyecto', key: 'proyecto' },
     {
       title: 'Presupuesto',
       dataIndex: 'presupuesto',
       key: 'presupuesto',
       align: 'right' as const,
-      render: (v: number) => 'Bs ' + v.toLocaleString('es-BO', { minimumFractionDigits: 2 }),
+      render: (v: number) => 'Bs ' + Number(v).toFixed(2),
     },
     {
       title: 'Costo Real',
       dataIndex: 'costoReal',
       key: 'costoReal',
       align: 'right' as const,
-      render: (v: number) => 'Bs ' + v.toLocaleString('es-BO', { minimumFractionDigits: 2 }),
+      render: (v: number) => 'Bs ' + Number(v).toFixed(2),
     },
     {
       title: 'Diferencia',
@@ -233,7 +251,7 @@ export default function ReportesView() {
       render: (v: number) => (
         <Text strong style={{ color: v >= 0 ? '#52c41a' : '#ff4d4f' }}>
           {v >= 0 ? '+' : ''}
-          {'Bs ' + v.toLocaleString('es-BO', { minimumFractionDigits: 2 })}
+          {'Bs ' + Number(v).toFixed(2)}
         </Text>
       ),
     },
@@ -251,11 +269,38 @@ export default function ReportesView() {
     },
   ]
 
-  // ── Semáforo ──
-  const COLOR_MAP = {
-    VERDE: '#52c41a',
-    AMARILLO: '#faad14',
-    ROJO: '#ff4d4f',
+  // ── Semáforo Configuration ──
+  const SEMAFORO_CONFIG = {
+    VERDE: {
+      label: 'ÓPTIMO',
+      sublabel: 'Proyecto al día',
+      bg: '#f0fdf4',
+      border: '#bbf7d0',
+      color: '#15803d',
+      dot: '#22c55e',
+      glow: 'rgba(34, 197, 94, 0.3)',
+      chartColor: '#22c55e',
+    },
+    AMARILLO: {
+      label: 'ATENCIÓN',
+      sublabel: 'Desviación moderada',
+      bg: '#fffbeb',
+      border: '#fde68a',
+      color: '#b45309',
+      dot: '#f59e0b',
+      glow: 'rgba(245, 158, 11, 0.3)',
+      chartColor: '#f59e0b',
+    },
+    ROJO: {
+      label: 'RIESGO CRÍTICO',
+      sublabel: 'Desviación grave',
+      bg: '#fef2f2',
+      border: '#fecaca',
+      color: '#b91c1c',
+      dot: '#ef4444',
+      glow: 'rgba(239, 68, 68, 0.3)',
+      chartColor: '#ef4444',
+    },
   }
 
   const semaforoDoughnutData = selectedSemaforoItem
@@ -263,10 +308,10 @@ export default function ReportesView() {
         labels: ['Avance Real', 'Restante'],
         datasets: [
           {
-            data: [selectedSemaforoItem.avanceReal, 100 - selectedSemaforoItem.avanceReal],
+            data: [selectedSemaforoItem.avanceReal, Math.max(0, 100 - selectedSemaforoItem.avanceReal)],
             backgroundColor: [
-              COLOR_MAP[selectedSemaforoItem.color],
-              '#f0f0f0',
+              SEMAFORO_CONFIG[selectedSemaforoItem.color]?.chartColor ?? '#22c55e',
+              '#f1f5f9',
             ],
             borderWidth: 0,
           },
@@ -274,19 +319,27 @@ export default function ReportesView() {
       }
     : null
 
+  // ── Filtered Carga de trabajo ──
+  const filteredCargaData = selectedUsuario
+    ? cargaData.filter((c) => {
+        const u = usuarios.find((usr) => usr.id === selectedUsuario)
+        return u ? c.usuario === u.nombre : true
+      })
+    : cargaData
+
   // ── Carga de trabajo bar chart ──
   const cargaBarData = {
-    labels: cargaData.map((c) => c.usuario),
+    labels: filteredCargaData.map((c) => c.usuario),
     datasets: [
       {
         label: 'Horas Estimadas',
-        data: cargaData.map((c) => c.totalHorasEstimadas),
+        data: filteredCargaData.map((c) => c.totalHorasEstimadas),
         backgroundColor: CHART_COLORS[0],
         borderRadius: 4,
       },
       {
         label: 'Horas Reales',
-        data: cargaData.map((c) => c.totalHorasReales),
+        data: filteredCargaData.map((c) => c.totalHorasReales),
         backgroundColor: CHART_COLORS[1],
         borderRadius: 4,
       },
@@ -294,6 +347,12 @@ export default function ReportesView() {
   }
 
   const cargaColumns = [
+    {
+      title: '#',
+      key: 'index',
+      width: 50,
+      render: (_: unknown, __: unknown, index: number) => index + 1,
+    },
     { title: 'Usuario', dataIndex: 'usuario', key: 'usuario' },
     {
       title: 'Horas Est.',
@@ -319,12 +378,49 @@ export default function ReportesView() {
 
   return (
     <Row gutter={[24, 24]}>
+        {/* ── Diagrama de Gantt del Proyecto ── */}
+        <Col xs={24}>
+          <Card
+            title={
+              <Space align="center">
+                <ScheduleOutlined style={{ color: '#2563eb' }} />
+                <span>Diagrama de Gantt del Proyecto</span>
+              </Space>
+            }
+            extra={
+              <Space align="center">
+                <Text style={{ fontSize: 13 }}>Seleccionar Proyecto:</Text>
+                <Select
+                  placeholder="Seleccionar proyecto"
+                  value={selectedGanttProyecto}
+                  onChange={setSelectedGanttProyecto}
+                  style={{ width: 240 }}
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {proyectos.map((p) => (
+                    <Option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </Option>
+                  ))}
+                </Select>
+              </Space>
+            }
+          >
+            {selectedGanttProyecto ? (
+              <GanttChart proyectoId={selectedGanttProyecto} />
+            ) : (
+              <Alert title="Seleccione un proyecto para visualizar su Diagrama de Gantt" type="info" showIcon />
+            )}
+          </Card>
+        </Col>
+
         {/* ── Presupuesto vs Costo ── */}
         <Col xs={24}>
           <Card
             title={
               <Space>
-                <DollarOutlined />
+                <WalletOutlined />
                 <span>Presupuesto vs Costo</span>
               </Space>
             }
@@ -398,45 +494,69 @@ export default function ReportesView() {
                   </Select>
 
                   {selectedSemaforoItem && (
-                    <div style={{ marginTop: 16 }}>
-                      <div
-                        style={{
-                          width: 80,
-                          height: 80,
-                          borderRadius: '50%',
-                          backgroundColor: COLOR_MAP[selectedSemaforoItem.color],
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '16px auto',
-                        }}
-                      >
-                        <Text strong style={{ color: '#fff', fontSize: 18 }}>
-                          {selectedSemaforoItem.color}
-                        </Text>
-                      </div>
+                    <div style={{ marginTop: 20 }}>
+                      {/* Premium Status Badge */}
+                      {(() => {
+                        const cfg = SEMAFORO_CONFIG[selectedSemaforoItem.color] ?? SEMAFORO_CONFIG.VERDE
+                        return (
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '12px 18px',
+                              borderRadius: 16,
+                              background: cfg.bg,
+                              border: `1px solid ${cfg.border}`,
+                              boxShadow: `0 4px 16px -2px ${cfg.glow}`,
+                              marginBottom: 20,
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                backgroundColor: cfg.dot,
+                                boxShadow: `0 0 10px ${cfg.dot}`,
+                                flexShrink: 0,
+                              }}
+                            />
+                            <div>
+                              <div style={{ color: cfg.color, fontWeight: 800, fontSize: 14, letterSpacing: '0.5px' }}>
+                                {cfg.label} ({selectedSemaforoItem.color})
+                              </div>
+                              <div style={{ color: cfg.color, fontSize: 12, opacity: 0.85, fontWeight: 500 }}>
+                                {cfg.sublabel}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })()}
 
-                      <Statistic
-                        title="Avance Real"
-                        value={selectedSemaforoItem.avanceReal}
-                        suffix="%"
-                      />
-                      <Statistic
-                        title="Avance Planificado"
-                        value={selectedSemaforoItem.avancePlanificado}
-                        suffix="%"
-                      />
-                      <Statistic
-                        title="Retraso"
-                        value={selectedSemaforoItem.retrasoPorcentaje}
-                        suffix="%"
-                        valueStyle={{
-                          color:
-                            selectedSemaforoItem.retrasoPorcentaje > 0
-                              ? '#ff4d4f'
-                              : '#52c41a',
-                        }}
-                      />
+                      {/* Clean Metric Cards Grid */}
+                      <Row gutter={[10, 10]}>
+                        <Col span={8}>
+                          <div style={{ background: '#f8fafc', padding: '12px 6px', borderRadius: 12, textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Avance Real</Text>
+                            <Text strong style={{ fontSize: 17, color: '#0f172a' }}>{selectedSemaforoItem.avanceReal}%</Text>
+                          </div>
+                        </Col>
+                        <Col span={8}>
+                          <div style={{ background: '#f8fafc', padding: '12px 6px', borderRadius: 12, textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Planificado</Text>
+                            <Text strong style={{ fontSize: 17, color: '#0f172a' }}>{selectedSemaforoItem.avancePlanificado}%</Text>
+                          </div>
+                        </Col>
+                        <Col span={8}>
+                          <div style={{ background: '#f8fafc', padding: '12px 6px', borderRadius: 12, textAlign: 'center', border: '1px solid #e2e8f0' }}>
+                            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Retraso</Text>
+                            <Text strong style={{ fontSize: 17, color: selectedSemaforoItem.retrasoPorcentaje > 0 ? '#ef4444' : '#10b981' }}>
+                              {selectedSemaforoItem.retrasoPorcentaje}%
+                            </Text>
+                          </div>
+                        </Col>
+                      </Row>
                     </div>
                   )}
                 </Col>
@@ -470,16 +590,33 @@ export default function ReportesView() {
               </Space>
             }
             extra={
-              <Button onClick={() => loadCargaTrabajo()} loading={cargaLoading}>
-                Consultar
-              </Button>
+              <Space>
+                <Select
+                  placeholder="Filtrar por usuario"
+                  value={selectedUsuario}
+                  onChange={setSelectedUsuario}
+                  allowClear
+                  style={{ width: 200 }}
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {usuarios.map((u) => (
+                    <Option key={u.id} value={u.id}>
+                      {u.nombre}
+                    </Option>
+                  ))}
+                </Select>
+                <Button onClick={() => loadCargaTrabajo()} loading={cargaLoading}>
+                  Consultar
+                </Button>
+              </Space>
             }
           >
             {cargaLoading ? (
               <div style={{ textAlign: 'center', padding: 24 }}>
                 <Spin />
               </div>
-            ) : cargaData.length === 0 ? (
+            ) : filteredCargaData.length === 0 ? (
               <Alert title="No hay datos de carga de trabajo" type="info" showIcon />
             ) : (
               <>
@@ -494,7 +631,7 @@ export default function ReportesView() {
                   />
                 </div>
                 <Table
-                  dataSource={cargaData}
+                  dataSource={filteredCargaData}
                   columns={cargaColumns}
                   rowKey="usuario"
                   pagination={false}

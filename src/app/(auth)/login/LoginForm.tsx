@@ -92,7 +92,7 @@ export default function LoginForm() {
           {/* Error alert */}
           {error && (
             <Alert
-              message="Error de Autenticación"
+              title="Error de Autenticación"
               description={error}
               type="error"
               showIcon

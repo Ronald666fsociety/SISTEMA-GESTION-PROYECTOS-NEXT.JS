@@ -138,7 +138,7 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
         beginAtZero: true,
         ticks: {
           callback: (tickValue: string | number) =>
-            'Bs ' + Number(tickValue).toLocaleString('es-BO'),
+            'Bs ' + Number(tickValue).toFixed(2),
         },
       },
     },
@@ -152,9 +152,9 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
   const recentColumns = [
     {
       title: '#',
-      dataIndex: 'id',
-      key: 'id',
+      key: 'index',
       width: 60,
+      render: (_: unknown, __: unknown, index: number) => index + 1,
     },
     {
       title: 'Nombre',
@@ -212,8 +212,9 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
             <Statistic
               title="Total Proyectos"
               value={stats.total}
+              groupSeparator=""
               prefix={<ProjectOutlined />}
-              valueStyle={{ color: '#1677ff' }}
+              styles={{ content: { color: '#1677ff' } }}
             />
           </Card>
         </Col>
@@ -228,8 +229,9 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
             <Statistic
               title="Planificados"
               value={stats.planificados}
+              groupSeparator=""
               prefix={<CalendarOutlined />}
-              valueStyle={{ color: '#1677ff' }}
+              styles={{ content: { color: '#1677ff' } }}
             />
           </Card>
         </Col>
@@ -244,8 +246,9 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
             <Statistic
               title="En Curso"
               value={stats.enCurso}
+              groupSeparator=""
               prefix={<PlayCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              styles={{ content: { color: '#52c41a' } }}
             />
           </Card>
         </Col>
@@ -260,8 +263,9 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
             <Statistic
               title="Finalizados"
               value={stats.finalizados}
+              groupSeparator=""
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#8c8c8c' }}
+              styles={{ content: { color: '#8c8c8c' } }}
             />
           </Card>
         </Col>

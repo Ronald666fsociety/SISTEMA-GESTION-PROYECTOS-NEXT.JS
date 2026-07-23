@@ -108,9 +108,9 @@ export default function RecursoList({
   const columns = [
     {
       title: '#',
-      dataIndex: 'id',
-      key: 'id',
+      key: 'index',
       width: 60,
+      render: (_: unknown, __: unknown, index: number) => index + 1,
     },
     {
       title: 'Tarea',

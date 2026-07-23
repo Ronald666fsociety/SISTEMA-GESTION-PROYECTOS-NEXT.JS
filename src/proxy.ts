@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose'
 // ── Configuration ──
 
 const RATE_LIMIT_MAP = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_MAX = 50
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
 
 function getJwtSecret(): Uint8Array {

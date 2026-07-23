@@ -103,7 +103,13 @@ async function getPresupuestoVsCosto(): Promise<NextResponse> {
 async function getSemaforo(): Promise<NextResponse> {
   const proyectos = await prisma.proyecto.findMany({
     where: { activo: true },
-    include: {
+    select: {
+      id: true,
+      nombre: true,
+      fechaInicio: true,
+      fechaFin: true,
+      presupuestoTotal: true,
+      costoRealTotal: true,
       tareas: {
         where: { activo: true },
         select: {
@@ -138,13 +144,21 @@ async function getSemaforo(): Promise<NextResponse> {
         )
       : 0
 
-    const retrasoPorcentaje = avancePlanificado - avanceReal
+    const retrasoPorcentaje = Math.max(0, avancePlanificado - avanceReal)
 
-    // Color: VERDE [0,10), AMARILLO [10,30], ROJO (30,∞)
+    const presupuesto = Number(p.presupuestoTotal)
+    const costoReal = Number(p.costoRealTotal)
+    const sobreCostoPorcentaje = presupuesto > 0 && costoReal > presupuesto
+      ? Math.round(((costoReal - presupuesto) / presupuesto) * 100)
+      : 0
+
+    const maxDesviacion = Math.max(retrasoPorcentaje, sobreCostoPorcentaje)
+
+    // Color: VERDE [<10%), AMARILLO [10%,30%], ROJO (>30%)
     let color: 'VERDE' | 'AMARILLO' | 'ROJO'
-    if (retrasoPorcentaje < 10) {
+    if (maxDesviacion < 10) {
       color = 'VERDE'
-    } else if (retrasoPorcentaje <= 30) {
+    } else if (maxDesviacion <= 30) {
       color = 'AMARILLO'
     } else {
       color = 'ROJO'
@@ -156,7 +170,7 @@ async function getSemaforo(): Promise<NextResponse> {
       avanceReal,
       avancePlanificado,
       retrasoPorcentaje,
-      sobreCostoPorcentaje: 0,
+      sobreCostoPorcentaje,
       color,
     }
   })

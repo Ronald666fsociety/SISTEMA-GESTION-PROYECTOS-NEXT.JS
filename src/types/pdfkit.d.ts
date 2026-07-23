@@ -10,19 +10,32 @@ declare module 'pdfkit' {
     bufferPages?: boolean
   }
 
+  interface TextOptions {
+    width?: number
+    align?: string
+    underline?: boolean
+    continued?: boolean
+    indent?: number
+    height?: number
+    lineBreak?: boolean
+    baseline?: string | number
+  }
+
   class PDFDocument {
     constructor(options?: PDFDocumentOptions)
     font(fontName: string, size?: number): this
     fontSize(size: number): this
-    text(text: string, options?: { width?: number; align?: string; underline?: boolean }): this
-    text(text: string, x: number, options?: { width?: number; align?: string }): this
-    text(text: string, x: number, y: number, options?: { width?: number; align?: string }): this
+    text(text: string, options?: TextOptions): this
+    text(text: string, x: number, options?: TextOptions): this
+    text(text: string, x: number, y: number, options?: TextOptions): this
     moveDown(lines?: number): this
     rect(x: number, y: number, width: number, height: number): this
     fill(color?: string): this
     fillColor(color: string): this
+    fillAndStroke(fillColor?: string, strokeColor?: string): this
     strokeColor(color: string): this
     lineWidth(width: number): this
+    lineCap(style: string): this
     stroke(): this
     moveTo(x: number, y: number): this
     lineTo(x: number, y: number): this

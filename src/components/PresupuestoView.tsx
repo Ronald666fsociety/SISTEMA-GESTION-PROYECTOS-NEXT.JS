@@ -4,7 +4,7 @@ import React from 'react'
 import dynamic from 'next/dynamic'
 import { Row, Col, Card, Statistic, Table, Typography } from 'antd'
 import {
-  DollarOutlined,
+  WalletOutlined,
   RiseOutlined,
   FallOutlined,
 } from '@ant-design/icons'
@@ -42,7 +42,7 @@ interface PresupuestoViewProps {
 
 export default function PresupuestoView({ proyecto, tareas }: PresupuestoViewProps) {
   const formatCurrency = (value: number) => {
-    return 'Bs ' + value.toLocaleString('es-BO', { minimumFractionDigits: 2 })
+    return 'Bs ' + Number(value).toFixed(2)
   }
 
   const presupuestoTotal = proyecto.presupuestoTotal
@@ -84,7 +84,7 @@ export default function PresupuestoView({ proyecto, tareas }: PresupuestoViewPro
         beginAtZero: true,
         ticks: {
           callback: (tickValue: string | number) =>
-            'Bs ' + Number(tickValue).toLocaleString('es-BO'),
+            'Bs ' + Number(tickValue).toFixed(2),
         },
       },
     },
@@ -105,6 +105,12 @@ export default function PresupuestoView({ proyecto, tareas }: PresupuestoViewPro
   })
 
   const summaryColumns = [
+    {
+      title: '#',
+      key: 'index',
+      width: 50,
+      render: (_: unknown, __: unknown, index: number) => index + 1,
+    },
     {
       title: 'Tarea',
       dataIndex: 'nombre',
@@ -146,8 +152,9 @@ export default function PresupuestoView({ proyecto, tareas }: PresupuestoViewPro
               title="Presupuesto Total"
               value={presupuestoTotal}
               precision={2}
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: '#1677ff' }}
+              groupSeparator=""
+              prefix={<WalletOutlined />}
+              styles={{ content: { color: '#1677ff' } }}
             />
           </Card>
         </Col>
@@ -157,8 +164,9 @@ export default function PresupuestoView({ proyecto, tareas }: PresupuestoViewPro
               title="Costo Real"
               value={costoReal}
               precision={2}
+              groupSeparator=""
               prefix={<FallOutlined />}
-              valueStyle={{ color: '#ff4d4f' }}
+              styles={{ content: { color: '#ff4d4f' } }}
             />
           </Card>
         </Col>
@@ -168,8 +176,9 @@ export default function PresupuestoView({ proyecto, tareas }: PresupuestoViewPro
               title="Diferencia"
               value={Math.abs(diferencia)}
               precision={2}
+              groupSeparator=""
               prefix={isPositive ? <RiseOutlined /> : <FallOutlined />}
-              valueStyle={{ color: isPositive ? '#52c41a' : '#ff4d4f' }}
+              styles={{ content: { color: isPositive ? '#52c41a' : '#ff4d4f' } }}
               suffix={isPositive ? 'superávit' : 'déficit'}
             />
           </Card>

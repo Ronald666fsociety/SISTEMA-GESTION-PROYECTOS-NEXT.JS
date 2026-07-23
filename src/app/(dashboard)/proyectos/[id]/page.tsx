@@ -22,7 +22,7 @@ import {
   FileExcelOutlined,
   UserOutlined,
   CalendarOutlined,
-  DollarCircleOutlined,
+  WalletOutlined,
   CodeOutlined,
 } from '@ant-design/icons'
 import TareaTree from '@/components/TareaTree'
@@ -132,45 +132,51 @@ export default function ProyectoDetallePage() {
 
   const handleExportPDF = async () => {
     try {
+      const authToken = localStorage.getItem('auth_token')
       const res = await fetch(`/api/exportar/pdf/plan_proyecto/${proyectoId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
       })
-      if (res.status === 404) {
-        message.info('Exportación disponible próximamente')
-        return
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null)
+        throw new Error(errJson?.error || 'Error al generar PDF')
       }
-      if (!res.ok) throw new Error()
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `proyecto-${proyectoId}.pdf`
+      a.download = `plan_proyecto_${proyectoId}.pdf`
       a.click()
       URL.revokeObjectURL(url)
-    } catch {
-      message.info('Exportación disponible próximamente')
+      message.success('PDF exportado correctamente')
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        message.error(err.message)
+      }
     }
   }
 
   const handleExportExcel = async () => {
     try {
+      const authToken = localStorage.getItem('auth_token')
       const res = await fetch(`/api/exportar/excel/plan_proyecto/${proyectoId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
       })
-      if (res.status === 404) {
-        message.info('Exportación disponible próximamente')
-        return
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null)
+        throw new Error(errJson?.error || 'Error al generar Excel')
       }
-      if (!res.ok) throw new Error()
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `proyecto-${proyectoId}.xlsx`
+      a.download = `plan_proyecto_${proyectoId}.xlsx`
       a.click()
       URL.revokeObjectURL(url)
-    } catch {
-      message.info('Exportación disponible próximamente')
+      message.success('Excel exportado correctamente')
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        message.error(err.message)
+      }
     }
   }
 
@@ -183,16 +189,16 @@ export default function ProyectoDetallePage() {
   }
 
   if (error) {
-    return <Alert message="Error" description={error} type="error" showIcon />
+    return <Alert title="Error" description={error} type="error" showIcon />
   }
 
   if (!proyecto) {
-    return <Alert message="Proyecto no encontrado" type="warning" showIcon />
+    return <Alert title="Proyecto no encontrado" type="warning" showIcon />
   }
 
   const formatDate = (date: string | null) => {
     if (!date) return '—'
-    return new Date(date).toLocaleDateString('es-AR')
+    return new Date(date).toLocaleDateString('es-ES')
   }
 
   const tabItems = [
@@ -279,7 +285,7 @@ export default function ProyectoDetallePage() {
           boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
         }}
       >
-        <Space direction="vertical" size={4}>
+        <Space orientation="vertical" size={4}>
           <Space align="center" size={12}>
             <Title level={2} style={{ margin: 0, fontWeight: 800, color: '#0f172a' }}>
               {proyecto.nombre}
@@ -319,47 +325,48 @@ export default function ProyectoDetallePage() {
       {/* ── Stat Cards ── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} md={6}>
-          <Card bodyStyle={{ padding: 18 }}>
+          <Card styles={{ body: { padding: 18 } }}>
             <Statistic
               title={<Text style={{ color: '#64748b', fontSize: 13 }}><CodeOutlined style={{ color: '#2563eb' }} /> Código</Text>}
               value={proyecto.codigo}
-              valueStyle={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}
+              styles={{ content: { fontSize: 18, fontWeight: 700, color: '#0f172a' } }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card bodyStyle={{ padding: 18 }}>
+          <Card styles={{ body: { padding: 18 } }}>
             <Statistic
               title={<Text style={{ color: '#64748b', fontSize: 13 }}><UserOutlined style={{ color: '#2563eb' }} /> Jefe de Proyecto</Text>}
               value={proyecto.nombreJefeProyecto ?? 'Sin asignar'}
-              valueStyle={{ fontSize: 16, fontWeight: 700, color: '#0f172a' }}
+              styles={{ content: { fontSize: 16, fontWeight: 700, color: '#0f172a' } }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card bodyStyle={{ padding: 18 }}>
+          <Card styles={{ body: { padding: 18 } }}>
             <Statistic
               title={<Text style={{ color: '#64748b', fontSize: 13 }}><CalendarOutlined style={{ color: '#2563eb' }} /> Fechas</Text>}
               value={`${formatDate(proyecto.fechaInicio)} — ${formatDate(proyecto.fechaFin)}`}
-              valueStyle={{ fontSize: 14, fontWeight: 600, color: '#334155' }}
+              styles={{ content: { fontSize: 14, fontWeight: 600, color: '#334155' } }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card bodyStyle={{ padding: 18 }}>
+          <Card styles={{ body: { padding: 18 } }}>
             <Statistic
-              title={<Text style={{ color: '#64748b', fontSize: 13 }}><DollarCircleOutlined style={{ color: '#2563eb' }} /> Presupuesto Total</Text>}
+              title={<Text style={{ color: '#64748b', fontSize: 13 }}><WalletOutlined style={{ color: '#2563eb' }} /> Presupuesto Total</Text>}
               value={proyecto.presupuestoTotal}
               precision={2}
+              groupSeparator=""
               prefix="Bs "
-              valueStyle={{ fontSize: 18, fontWeight: 800, color: '#2563eb' }}
+              styles={{ content: { fontSize: 18, fontWeight: 800, color: '#2563eb' } }}
             />
           </Card>
         </Col>
       </Row>
 
       {/* ── Main Tabs ── */}
-      <Card bodyStyle={{ padding: 24 }}>
+      <Card styles={{ body: { padding: 24 } }}>
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}

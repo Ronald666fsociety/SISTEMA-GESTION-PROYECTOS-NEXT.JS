@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Plus_Jakarta_Sans } from 'next/font/google'
-import { AntdRegistry } from '@ant-design/nextjs-registry'
+import AntdRegistry from '@/components/AntdRegistry'
 import { Analytics } from '@vercel/analytics/next'
 import '@/styles/globals.css'
 
@@ -21,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es">
-      <body className={jakarta.className} style={{ margin: 0, padding: 0, background: '#f8fafc', color: '#0f172a' }}>
+    <html lang="es" suppressHydrationWarning>
+      <body className={jakarta.className} suppressHydrationWarning style={{ margin: 0, padding: 0, background: '#f8fafc', color: '#0f172a' }}>
         <AntdRegistry>{children}</AntdRegistry>
         <Analytics />
       </body>

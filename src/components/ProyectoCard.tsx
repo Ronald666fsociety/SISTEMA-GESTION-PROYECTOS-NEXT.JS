@@ -8,7 +8,7 @@ import {
   DeleteOutlined,
   CalendarOutlined,
   UserOutlined,
-  DollarCircleOutlined,
+  WalletOutlined,
   RightOutlined,
 } from '@ant-design/icons'
 import type { Proyecto } from '@/types'
@@ -46,11 +46,11 @@ export default function ProyectoCard({
 
   const formatDate = (date: string | null) => {
     if (!date) return '—'
-    return new Date(date).toLocaleDateString('es-AR')
+    return new Date(date).toLocaleDateString('es-ES')
   }
 
   const formatCurrency = (value: number) => {
-    return 'Bs ' + value.toLocaleString('es-BO', { minimumFractionDigits: 2 })
+    return 'Bs ' + Number(value).toFixed(2)
   }
 
   const handleCardClick = () => {
@@ -71,7 +71,7 @@ export default function ProyectoCard({
         border: '1px solid #e2e8f0',
         borderRadius: 16,
       }}
-      bodyStyle={{ padding: 22, flex: 1, display: 'flex', flexDirection: 'column' }}
+      styles={{ body: { padding: 22, flex: 1, display: 'flex', flexDirection: 'column' } }}
     >
       <div>
         {/* Header: Name & Badge */}
@@ -111,7 +111,7 @@ export default function ProyectoCard({
           </Space>
 
           <Space size={8}>
-            <DollarCircleOutlined style={{ color: '#2563eb' }} />
+            <WalletOutlined style={{ color: '#2563eb' }} />
             <Text strong style={{ fontSize: 14, color: '#0f172a' }}>
               {formatCurrency(proyecto.presupuestoTotal)}
             </Text>

@@ -12,9 +12,10 @@ import {
   Typography,
   Spin,
   Alert,
+  message,
 } from 'antd'
-import { SearchOutlined, ClearOutlined } from '@ant-design/icons'
-import type { Auditoria, PaginatedResponse } from '@/types'
+import { SearchOutlined, ClearOutlined, UserOutlined, GlobalOutlined, FilePdfOutlined } from '@ant-design/icons'
+import type { Auditoria, PaginatedResponse, Usuario } from '@/types'
 import type { Dayjs } from 'dayjs'
 
 const { Text } = Typography
@@ -33,27 +34,29 @@ const ACCION_LABELS: Record<string, string> = {
   ELIMINAR: 'Eliminación',
 }
 
-const ENTIDAD_OPTIONS = [
-  'Proyecto',
-  'Tarea',
-  'Usuario',
-  'DependenciaTarea',
-  'Asignacion',
-]
-
 export default function AuditoriaTable() {
   const [data, setData] = useState<Auditoria[]>([])
+  const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [limit] = useState(100)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Filters
-  const [entidad, setEntidad] = useState<string | undefined>()
-  const [entidadId, setEntidadId] = useState<string>('')
+  // Filters (Entidad and ID Entidad removed per user request)
   const [usuarioId, setUsuarioId] = useState<string>('')
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null)
+
+  // Fetch users for filter dropdown
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token')
+    fetch('/api/usuarios', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setUsuarios(data))
+      .catch(() => {})
+  }, [])
 
   const fetchData = useCallback(async (p: number = page) => {
     setLoading(true)
@@ -65,11 +68,9 @@ export default function AuditoriaTable() {
       params.set('page', String(p))
       params.set('limit', String(limit))
 
-      if (entidad) params.set('entidad', entidad)
-      if (entidadId) params.set('entidadId', entidadId)
       if (usuarioId) params.set('usuarioId', usuarioId)
-      if (dateRange?.[0]) params.set('fechaDesde', dateRange[0].toISOString())
-      if (dateRange?.[1]) params.set('fechaHasta', dateRange[1].toISOString())
+      if (dateRange?.[0]) params.set('fechaDesde', dateRange[0].startOf('day').toISOString())
+      if (dateRange?.[1]) params.set('fechaHasta', dateRange[1].endOf('day').toISOString())
 
       const res = await fetch(`/api/auditoria?${params.toString()}`, {
         headers: {
@@ -99,7 +100,7 @@ export default function AuditoriaTable() {
     } finally {
       setLoading(false)
     }
-  }, [entidad, entidadId, usuarioId, dateRange, limit, page])
+  }, [usuarioId, dateRange, limit, page])
 
   useEffect(() => {
     fetchData(1)
@@ -111,12 +112,36 @@ export default function AuditoriaTable() {
   }
 
   const handleClear = () => {
-    setEntidad(undefined)
-    setEntidadId('')
     setUsuarioId('')
     setDateRange(null)
     setPage(1)
     fetchData(1)
+  }
+
+  const handleExportPDF = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      const params = new URLSearchParams()
+      if (usuarioId) params.set('usuarioId', usuarioId)
+      if (dateRange?.[0]) params.set('fechaDesde', dateRange[0].startOf('day').toISOString())
+      if (dateRange?.[1]) params.set('fechaHasta', dateRange[1].endOf('day').toISOString())
+
+      const res = await fetch(`/api/exportar/pdf/auditoria?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!res.ok) throw new Error('Error al exportar PDF')
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'reporte-auditoria.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      message.error('Error al generar el reporte PDF')
+    }
   }
 
   const handleTableChange = (pagination: { current?: number }) => {
@@ -128,77 +153,85 @@ export default function AuditoriaTable() {
   const columns = [
     {
       title: '#',
-      dataIndex: 'id',
-      key: 'id',
+      key: 'index',
       width: 60,
+      align: 'center' as const,
+      render: (_: unknown, __: unknown, index: number) => (page - 1) * limit + index + 1,
     },
     {
-      title: 'Fecha',
+      title: 'Fecha y Hora',
       dataIndex: 'fecha',
       key: 'fecha',
-      render: (fecha: string) =>
-        new Date(fecha).toLocaleString('es-AR'),
+      width: 170,
+      render: (fecha: string) => {
+        const d = new Date(fecha)
+        return `${d.toLocaleDateString('es-BO')} ${d.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}`
+      },
     },
     {
       title: 'Usuario',
       dataIndex: 'nombreUsuario',
       key: 'nombreUsuario',
+      width: 180,
+      render: (nombre: string) => (
+        <Space size={6}>
+          <UserOutlined style={{ color: '#1677ff' }} />
+          <Text strong>{nombre ?? 'Sistema'}</Text>
+        </Space>
+      ),
+    },
+    {
+      title: 'Dirección IP',
+      dataIndex: 'ip',
+      key: 'ip',
+      width: 150,
+      render: (ip?: string) => (
+        <Tag icon={<GlobalOutlined />} color="cyan" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+          {ip ?? '127.0.0.1'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Actividad / Descripción',
+      key: 'actividad',
+      render: (_: unknown, record: Auditoria) => {
+        const desc = record.detalle ?? `${ACCION_LABELS[record.accion] ?? record.accion} en ${record.entidad} #${record.entidadId}`
+        return <Text>{desc}</Text>
+      },
     },
     {
       title: 'Acción',
       dataIndex: 'accion',
       key: 'accion',
+      width: 130,
+      align: 'center' as const,
       render: (accion: string) => (
-        <Tag color={ACCION_COLORS[accion] ?? 'default'}>
+        <Tag color={ACCION_COLORS[accion] ?? 'default'} style={{ borderRadius: 10, padding: '2px 10px' }}>
           {ACCION_LABELS[accion] ?? accion}
         </Tag>
       ),
-    },
-    {
-      title: 'Entidad',
-      dataIndex: 'entidad',
-      key: 'entidad',
-    },
-    {
-      title: 'ID Entidad',
-      dataIndex: 'entidadId',
-      key: 'entidadId',
     },
   ]
 
   return (
     <div>
-      {/* ── Filter bar ── */}
+      {/* ── Filter bar (simplified per user request) ── */}
       <Space style={{ marginBottom: 16, flexWrap: 'wrap' }} size="middle">
         <Select
-          placeholder="Entidad"
-          value={entidad}
-          onChange={setEntidad}
+          placeholder="Filtrar por Usuario"
+          value={usuarioId || undefined}
+          onChange={(val) => setUsuarioId(val ? String(val) : '')}
           allowClear
-          style={{ width: 180 }}
+          style={{ width: 220 }}
+          showSearch
+          optionFilterProp="children"
         >
-          {ENTIDAD_OPTIONS.map((e) => (
-            <Option key={e} value={e}>
-              {e}
+          {usuarios.map((u) => (
+            <Option key={u.id} value={String(u.id)}>
+              {u.nombre} ({u.rol})
             </Option>
           ))}
         </Select>
-
-        <Input
-          placeholder="ID Entidad"
-          value={entidadId}
-          onChange={(e) => setEntidadId(e.target.value)}
-          style={{ width: 120 }}
-          type="number"
-        />
-
-        <Input
-          placeholder="ID Usuario"
-          value={usuarioId}
-          onChange={(e) => setUsuarioId(e.target.value)}
-          style={{ width: 120 }}
-          type="number"
-        />
 
         <RangePicker
           value={dateRange as any}
@@ -210,11 +243,15 @@ export default function AuditoriaTable() {
           icon={<SearchOutlined />}
           onClick={handleFilter}
         >
-          Filtrar
+          Buscar
         </Button>
 
         <Button icon={<ClearOutlined />} onClick={handleClear}>
           Limpiar
+        </Button>
+
+        <Button icon={<FilePdfOutlined />} onClick={handleExportPDF}>
+          Reporte PDF
         </Button>
       </Space>
 
@@ -234,8 +271,8 @@ export default function AuditoriaTable() {
             current: page,
             pageSize: limit,
             total,
-            showTotal: (total: number) =>
-              `Total: ${total} registro${total !== 1 ? 's' : ''}`,
+            showTotal: (totalCount: number) =>
+              `Total: ${totalCount} actividad${totalCount !== 1 ? 'es' : ''}`,
           }}
           onChange={handleTableChange as any}
           size="middle"

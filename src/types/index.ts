@@ -77,6 +77,7 @@ export interface Auditoria {
   fecha: string
   usuarioId: number
   nombreUsuario?: string
+  ip?: string
 }
 
 // ── JWT ──

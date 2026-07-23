@@ -251,12 +251,18 @@ export default function TareaTree({
   }
 
   const formatCurrency = (value: number) => {
-    return 'Bs ' + value.toLocaleString('es-BO', { minimumFractionDigits: 2 })
+    return 'Bs ' + Number(value).toFixed(2)
   }
 
   // ── Columns ──
 
   const columns = [
+    {
+      title: '#',
+      key: 'index',
+      width: 50,
+      render: (_: unknown, __: unknown, index: number) => index + 1,
+    },
     {
       title: 'Nombre',
       dataIndex: 'nombre',

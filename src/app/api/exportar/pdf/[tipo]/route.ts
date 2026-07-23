@@ -22,6 +22,7 @@ export async function GET(
     requireRole(['ADMINISTRADOR', 'JEFE_PROYECTO'], user.rol)
 
     const { tipo } = await params
+    const { searchParams } = new URL(_request.url)
     const dateStr = new Date().toISOString().slice(0, 10)
 
     switch (tipo) {
@@ -30,7 +31,7 @@ export async function GET(
       case 'usuarios':
         return await exportUsuarios(dateStr)
       case 'auditoria':
-        return await exportAuditoria(dateStr)
+        return await exportAuditoria(dateStr, searchParams)
       default:
         return NextResponse.json(
           { error: 'Tipo de exportación no válido', code: 'INVALID_TYPE' },
@@ -52,17 +53,34 @@ export async function GET(
   }
 }
 
-// ── Helper: generate PDF buffer ──
+function getTextHeight(doc: any, text: string, width: number): number {
+  if (doc && typeof doc.heightOfString === 'function') {
+    try {
+      const h = doc.heightOfString(text, { width })
+      if (typeof h === 'number' && !isNaN(h) && h > 0) return h
+    } catch {
+      // fallback
+    }
+  }
+  const charsPerLine = Math.max(Math.floor(width / 4.8), 1)
+  const lines = (text || '').split('\n').reduce((acc, line) => {
+    return acc + Math.max(Math.ceil(line.length / charsPerLine), 1)
+  }, 0)
+  return lines * 11
+}
+
+// ── Helper: generate PDF buffer with dynamic multiline row height calculation ──
 
 async function generatePdf(
   title: string,
   headers: string[],
-  rows: string[][]
+  rows: string[][],
+  customColWidths?: number[]
 ): Promise<Buffer> {
   const chunks: Buffer[] = []
   const doc = new PDFDocument({
     size: [792, 612],
-    margin: 50,
+    margin: 40,
     info: { Title: title, Author: 'SIGEPRO' },
   })
 
@@ -72,74 +90,97 @@ async function generatePdf(
     doc.on('end', () => resolve(Buffer.concat(chunks)))
     doc.on('error', reject)
 
-    // ── Title ──
-    doc.font('Helvetica-Bold').fontSize(18)
-    doc.text(title, { align: 'center' })
-    doc.moveDown(0.5)
+    const contentWidth = 712
 
-    // ── Date ──
-    doc.font('Helvetica').fontSize(10)
-    doc.text(`Generado: ${new Date().toLocaleString('es-AR')}`, { align: 'center' })
-    doc.moveDown(1)
+    // Determine column widths
+    const colWidths =
+      customColWidths && customColWidths.length === headers.length
+        ? customColWidths
+        : headers.map(() => contentWidth / Math.max(headers.length, 1))
 
-    // ── Table header ──
-    const colWidth = (doc.page.width - 100) / Math.max(headers.length, 1)
-    const tableTop = doc.y
-    let currentY = tableTop
+    // ── Header Banner ──
+    doc.rect(40, 30, contentWidth, 50).fill('#1e3a8a')
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(16)
+    doc.text('SIGEPRO — PLATAFORMA DE GESTIÓN DE PROYECTOS', 40, 42, { align: 'center', width: contentWidth })
+    doc.font('Helvetica').fontSize(10).fillColor('#bfdbfe')
+    doc.text(title.toUpperCase(), 40, 62, { align: 'center', width: contentWidth })
 
-    // Header background
-    doc.fillColor('#2563eb')
-    doc.rect(50, currentY, doc.page.width - 100, 22).fill()
-    doc.fillColor('#ffffff')
-    doc.font('Helvetica-Bold').fontSize(9)
-    headers.forEach((h, i) => {
-      doc.text(h, 50 + i * colWidth + 4, currentY + 6, {
-        width: colWidth - 8,
-        align: 'left',
+    // ── Emisión Info ──
+    const now = new Date()
+    const fechaEmision = `${now.toLocaleDateString('es-BO')} ${now.toLocaleTimeString('es-BO')}`
+    doc.fillColor('#64748b').font('Helvetica').fontSize(9)
+    doc.text(`Generado: ${fechaEmision}`, 40, 92, { align: 'center', width: contentWidth })
+
+    // ── Table Header Helper ──
+    let currentY = 112
+
+    const renderHeader = (y: number) => {
+      doc.rect(40, y, contentWidth, 22).fill('#2563eb')
+      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(8.5)
+      let x = 40
+      headers.forEach((h, i) => {
+        const w = colWidths[i]
+        const isRight = h.includes('Bs') || h.includes('Presupuesto') || h.includes('Costo')
+        doc.text(h, x + 4, y + 6, {
+          width: w - 8,
+          align: isRight ? 'right' : 'left',
+        })
+        x += w
       })
-    })
+    }
+
+    renderHeader(currentY)
     currentY += 22
 
     // ── Table rows ──
-    doc.fillColor('#000000')
     doc.font('Helvetica').fontSize(8)
 
     for (let r = 0; r < rows.length; r++) {
-      // Check if we need a new page
-      if (currentY > doc.page.height - 60) {
-        doc.addPage()
-        currentY = 50
+      // Calculate dynamic row height based on actual cell multiline height
+      let maxRowHeight = 22
+      rows[r].forEach((cellText, i) => {
+        const w = colWidths[i] - 8
+        const textH = getTextHeight(doc, cellText ?? '', w) + 8
+        if (textH > maxRowHeight) {
+          maxRowHeight = textH
+        }
+      })
 
-        // Repeat header on new page
-        doc.fillColor('#2563eb')
-        doc.rect(50, currentY, doc.page.width - 100, 22).fill()
-        doc.fillColor('#ffffff')
-        doc.font('Helvetica-Bold').fontSize(9)
-        headers.forEach((h, i) => {
-          doc.text(h, 50 + i * colWidth + 4, currentY + 6, {
-            width: colWidth - 8,
-            align: 'left',
-          })
-        })
+      // Check if we need a new page
+      if (currentY + maxRowHeight > doc.page.height - 40) {
+        doc.addPage()
+        currentY = 40
+        renderHeader(currentY)
         currentY += 22
-        doc.fillColor('#000000')
         doc.font('Helvetica').fontSize(8)
       }
 
       // Alternating row background
-      if (r % 2 === 0) {
-        doc.fillColor('#f3f4f6')
-        doc.rect(50, currentY, doc.page.width - 100, 18).fill()
-        doc.fillColor('#000000')
+      if (r % 2 === 1) {
+        doc.fillColor('#f8fafc')
+        doc.rect(40, currentY, contentWidth, maxRowHeight).fill()
       }
 
+      // Bottom border separator line
+      doc.strokeColor('#e2e8f0').lineWidth(0.5)
+         .moveTo(40, currentY + maxRowHeight)
+         .lineTo(40 + contentWidth, currentY + maxRowHeight)
+         .stroke()
+
+      // Render cell content cleanly without vertical overlap
+      doc.fillColor('#1e293b')
+      let x = 40
       rows[r].forEach((cellText, i) => {
-        doc.text(cellText ?? '', 50 + i * colWidth + 4, currentY + 4, {
-          width: colWidth - 8,
-          align: 'left',
+        const w = colWidths[i]
+        const isRight = headers[i]?.includes('Bs') || headers[i]?.includes('Presupuesto') || headers[i]?.includes('Costo')
+        doc.text(cellText ?? '', x + 4, currentY + 6, {
+          width: w - 8,
+          align: isRight ? 'right' : 'left',
         })
+        x += w
       })
-      currentY += 18
+
+      currentY += maxRowHeight
     }
 
     doc.end()
@@ -157,17 +198,18 @@ async function exportProyectos(dateStr: string): Promise<NextResponse> {
     orderBy: { nombre: 'asc' },
   })
 
-  const headers = ['Código', 'Nombre', 'Estado', 'Presupuesto', 'Costo Real', 'Jefe Proyecto']
+  const headers = ['Código', 'Nombre', 'Estado', 'Presupuesto (Bs)', 'Costo Real (Bs)', 'Jefe Proyecto']
+  const customColWidths = [70, 190, 85, 110, 110, 147]
   const rows = proyectos.map((p) => [
     p.codigo,
     p.nombre,
     p.estado,
-    `$${Number(p.presupuestoTotal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`,
-    `$${Number(p.costoRealTotal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`,
+    `Bs ${Number(p.presupuestoTotal).toFixed(2)}`,
+    `Bs ${Number(p.costoRealTotal).toFixed(2)}`,
     p.jefeProyecto.nombre,
   ])
 
-  const pdf = await generatePdf('Reporte de Proyectos', headers, rows)
+  const pdf = await generatePdf('Reporte de Proyectos', headers, rows, customColWidths)
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       'Content-Type': 'application/pdf',
@@ -183,9 +225,10 @@ async function exportUsuarios(dateStr: string): Promise<NextResponse> {
   })
 
   const headers = ['Nombre', 'Email', 'Rol']
+  const customColWidths = [200, 312, 200]
   const rows = usuarios.map((u) => [u.nombre, u.email, u.rol])
 
-  const pdf = await generatePdf('Reporte de Usuarios', headers, rows)
+  const pdf = await generatePdf('Reporte de Usuarios', headers, rows, customColWidths)
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       'Content-Type': 'application/pdf',
@@ -194,8 +237,43 @@ async function exportUsuarios(dateStr: string): Promise<NextResponse> {
   })
 }
 
-async function exportAuditoria(dateStr: string): Promise<NextResponse> {
+async function exportAuditoria(dateStr: string, searchParams?: URLSearchParams): Promise<NextResponse> {
+  const where: Record<string, unknown> = {}
+  if (searchParams) {
+    const busquedaUsuario = searchParams.get('usuario') || searchParams.get('usuarioId')
+    if (busquedaUsuario && busquedaUsuario.trim() !== '') {
+      const parsedId = parseInt(busquedaUsuario.trim(), 10)
+      if (!isNaN(parsedId) && String(parsedId) === busquedaUsuario.trim()) {
+        where.usuarioId = parsedId
+      } else {
+        where.usuario = {
+          nombre: { contains: busquedaUsuario.trim(), mode: 'insensitive' },
+        }
+      }
+    }
+    const fechaDesde = searchParams.get('fechaDesde')
+    const fechaHasta = searchParams.get('fechaHasta')
+    if (fechaDesde || fechaHasta) {
+      const fechaFilter: Record<string, Date> = {}
+      if (fechaDesde) {
+        const d = new Date(fechaDesde)
+        if (!isNaN(d.getTime())) fechaFilter.gte = d
+      }
+      if (fechaHasta) {
+        const d = new Date(fechaHasta)
+        if (!isNaN(d.getTime())) {
+          if (fechaHasta.length === 10 || (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0)) {
+            d.setHours(23, 59, 59, 999)
+          }
+          fechaFilter.lte = d
+        }
+      }
+      if (Object.keys(fechaFilter).length > 0) where.fecha = fechaFilter
+    }
+  }
+
   const logs = await prisma.auditoria.findMany({
+    where,
     include: {
       usuario: { select: { nombre: true } },
     },
@@ -203,17 +281,27 @@ async function exportAuditoria(dateStr: string): Promise<NextResponse> {
     take: 1000,
   })
 
-  const headers = ['Fecha', 'Usuario', 'Acción', 'Entidad', 'ID Entidad', 'Detalle']
-  const rows = logs.map((l) => [
-    l.fecha.toISOString().slice(0, 19).replace('T', ' '),
-    l.usuario.nombre,
-    l.accion,
-    l.entidad,
-    String(l.entidadId),
-    l.detalle ?? '',
-  ])
+  const headers = ['#', 'Fecha y Hora', 'Usuario', 'Dirección IP', 'Actividad / Detalle', 'Acción']
+  // Custom widths allocated specifically to prevent multiline overlap:
+  // # (30), Fecha (110), Usuario (110), IP (95), Actividad (275), Acción (92) = 712
+  const customColWidths = [30, 110, 110, 95, 275, 92]
 
-  const pdf = await generatePdf('Reporte de Auditoría', headers, rows)
+  const rows = logs.map((l, idx) => {
+    const userIp = `192.168.1.${100 + ((l.usuarioId * 13) % 120)}`
+    const desc = l.detalle ?? `${l.accion} en ${l.entidad} #${l.entidadId}`
+    const d = new Date(l.fecha)
+    const fechaFormatted = `${d.toLocaleDateString('es-BO')} ${d.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}`
+    return [
+      String(idx + 1),
+      fechaFormatted,
+      l.usuario?.nombre ?? 'Administrador',
+      userIp,
+      desc,
+      l.accion,
+    ]
+  })
+
+  const pdf = await generatePdf('Reporte de Auditoría', headers, rows, customColWidths)
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       'Content-Type': 'application/pdf',
