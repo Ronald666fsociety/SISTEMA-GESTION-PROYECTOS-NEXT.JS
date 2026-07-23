@@ -16,12 +16,14 @@ import {
   Alert,
   Space,
   Tabs,
+  message,
 } from 'antd'
 import {
   WalletOutlined,
   PieChartOutlined,
   TeamOutlined,
   ScheduleOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons'
 import GanttChart from '@/components/GanttChart'
 
@@ -112,6 +114,25 @@ export default function ReportesView() {
 
   // Gantt
   const [selectedGanttProyecto, setSelectedGanttProyecto] = useState<number | undefined>()
+  const [seedLoading, setSeedLoading] = useState(false)
+
+  const handleSeedReset = async () => {
+    setSeedLoading(true)
+    try {
+      const res = await fetch('/api/seed', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        message.success('¡Base de datos cargada con 6 proyectos dinámicos (Rojo, Amarillo, Verde)!')
+        window.location.reload()
+      } else {
+        message.error(data.error || 'Error al actualizar base de datos')
+      }
+    } catch {
+      message.error('Error al conectar con la API de seed')
+    } finally {
+      setSeedLoading(false)
+    }
+  }
 
   // Fetch initial data
   useEffect(() => {
@@ -464,9 +485,20 @@ export default function ReportesView() {
               </Space>
             }
             extra={
-              <Button onClick={loadSemaforo} loading={semaforoLoading}>
-                Consultar
-              </Button>
+              <Space>
+                <Button
+                  type="primary"
+                  danger
+                  icon={<ReloadOutlined />}
+                  loading={seedLoading}
+                  onClick={handleSeedReset}
+                >
+                  Reinicializar Datos Supabase (6 Proyectos)
+                </Button>
+                <Button onClick={loadSemaforo} loading={semaforoLoading}>
+                  Consultar
+                </Button>
+              </Space>
             }
           >
             {semaforoLoading ? (

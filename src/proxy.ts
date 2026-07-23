@@ -36,7 +36,7 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number } {
 }
 
 // Public paths that do not require authentication
-const publicPaths = ['/api/auth/login']
+const publicPaths = ['/api/auth/login', '/api/seed']
 
 // ── Proxy / Middleware ──
 
