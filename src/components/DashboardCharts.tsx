@@ -138,7 +138,7 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
         beginAtZero: true,
         ticks: {
           callback: (tickValue: string | number) =>
-            'Bs ' + Number(tickValue).toFixed(2),
+            'Bs ' + Math.round(Number(tickValue)),
         },
       },
     },

@@ -84,7 +84,7 @@ export default function PresupuestoView({ proyecto, tareas }: PresupuestoViewPro
         beginAtZero: true,
         ticks: {
           callback: (tickValue: string | number) =>
-            'Bs ' + Number(tickValue).toFixed(2),
+            'Bs ' + Math.round(Number(tickValue)),
         },
       },
     },
